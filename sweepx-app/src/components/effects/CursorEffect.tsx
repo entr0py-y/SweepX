@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 /**
  * CursorEffect — renders:
@@ -9,13 +9,16 @@ import React, { useEffect, useRef } from 'react'
  */
 export function CursorEffect() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isPointer, setIsPointer] = useState(false)
 
-  // Only run on devices with a fine pointer (mouse) — skip touch/mobile
-  const isPointerDevice = typeof window !== 'undefined' &&
-    window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  // Detect pointer device after mount (avoids SSR mismatch)
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)')
+    setIsPointer(mq.matches)
+  }, [])
 
   useEffect(() => {
-    if (!isPointerDevice) return
+    if (!isPointer) return
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -131,15 +134,14 @@ export function CursorEffect() {
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
     }
-  }, [])
+  }, [isPointer])
 
-  if (!isPointerDevice) return null
+  if (!isPointer) return null
 
   return (
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-[9999]"
-      style={{ mixBlendMode: 'screen' }}
     />
   )
 }
