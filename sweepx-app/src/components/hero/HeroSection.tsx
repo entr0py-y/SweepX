@@ -24,17 +24,17 @@ export const HeroSection: React.FC<HeroProps> = ({ id, onStart, authed, onAuth }
   const xpMax  = user?.xpToNext ?? 10000
 
   return (
-    <section id={id} ref={heroRef} className="relative overflow-hidden min-h-[420px] flex items-center">
+    <section id={id} ref={heroRef} className="relative overflow-hidden min-h-0 md:min-h-[420px] flex items-center">
 
       {/* BG layers */}
       <div className="absolute inset-0 bg-void-base" />
       <div className="absolute inset-0 bg-hero-grain opacity-60" />
 
       {/* Content — two-column: left copy + right tile */}
-      <div className="relative z-10 w-full px-6 md:px-10 py-14 flex items-center justify-between gap-12">
+      <div className="relative z-10 w-full px-6 md:px-10 py-6 md:py-14 flex items-center justify-between gap-12">
 
         {/* ── Left copy ── */}
-        <motion.div className="flex flex-col gap-5 max-w-lg flex-shrink-0"
+        <motion.div className="flex flex-col gap-4 md:gap-5 max-w-lg flex-shrink-0"
           initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
 
