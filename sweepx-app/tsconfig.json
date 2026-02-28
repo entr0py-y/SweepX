@@ -6,6 +6,7 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "types": ["react", "react-dom"],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
