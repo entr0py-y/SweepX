@@ -32,8 +32,8 @@ export const DailyStreak: React.FC<{ streak?: number }> = ({ streak = 12 }) => {
               <div className="relative w-full flex justify-center">
                 {cur && <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white/70" />}
                 <motion.div
-                  className={`w-full rounded-md ${cur ? 'bg-purple-700 shadow-[0_0_14px_rgba(126,34,206,0.7)]' : on ? 'bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.35)]' : 'bg-white/[0.10]'}`}
-                  style={{ height: on ? 28 : 20, originY: 1 }}
+                  className={`w-full rounded-md ${cur ? 'shadow-[0_0_12px_rgba(124,58,237,0.5)]' : on ? 'bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.35)]' : 'bg-white/[0.10]'}`}
+                  style={{ height: on ? 28 : 20, originY: 1, ...(cur ? { background: '#7c3aed' } : {}) }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
                   transition={{ delay: i * 0.05, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
