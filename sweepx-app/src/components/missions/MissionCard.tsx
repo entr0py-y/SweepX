@@ -1,9 +1,10 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { Zap, ChevronRight } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import type { Mission } from '../../types'
 import { useQuestStore } from '../../store/questStore'
 import { cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button'
 
 export const MissionCard: React.FC<{
   mission: Mission; index: number
@@ -12,11 +13,7 @@ export const MissionCard: React.FC<{
   const isDone   = mission.status === 'completed'
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}>
+    <GlowWrapper variant="lg">
       <div className={cn(
         'glass-tile h-full',
         isDone ? 'opacity-60' : ''
@@ -42,13 +39,11 @@ export const MissionCard: React.FC<{
               +{mission.rewardPoints} pts
             </div>
             {!isDone && (
-              <button
+              <InteractiveHoverButton
+                text="Start"
+                size="sm"
                 onClick={() => openVerification(mission)}
-                className="glass-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-semibold tracking-wide transition-all duration-200 ease-out hover:scale-[1.03]"
-              >
-                Start
-                <ChevronRight size={12} />
-              </button>
+              />
             )}
             {isDone && (
               <span className="text-2xs text-slate-400 font-semibold">Completed</span>
@@ -56,6 +51,6 @@ export const MissionCard: React.FC<{
           </div>
         </div>
       </div>
-    </motion.div>
+      </GlowWrapper>
   )
 }

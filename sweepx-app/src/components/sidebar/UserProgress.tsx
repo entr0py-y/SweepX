@@ -2,6 +2,7 @@ import React from 'react'
 import { Star, Zap, Award } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { Counter, XPBar } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 export const UserProgress: React.FC = () => {
   const u = useAppStore(s => s.user)
@@ -17,6 +18,7 @@ export const UserProgress: React.FC = () => {
   ]
 
   return (
+    <GlowWrapper variant="sm" className="w-full">
     <div className="glass-tile-sm w-full p-5">
       <div className="relative z-[2] flex items-center gap-2 mb-3">
         <span className="text-2xs uppercase tracking-[0.1em] text-slate-500 font-medium">Your Progress</span>
@@ -40,8 +42,14 @@ export const UserProgress: React.FC = () => {
 
       <div className="relative z-[2] grid grid-cols-3 gap-2">
         {stats.map(s => (
-          <div key={s.label} className="bg-white/[0.04] rounded-xl p-2 text-center flex flex-col items-center gap-1"
-            style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={s.label} className="rounded-xl p-2 text-center flex flex-col items-center gap-1"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'url("#liquid-glass-filter") blur(2px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              boxShadow: 'inset 1px 1px 1px -0.5px rgba(255,255,255,0.18), inset -1px -1px 1px -0.5px rgba(0,0,0,0.3), inset 0 0 4px 3px rgba(255,255,255,0.02)',
+            }}>
             <div className="flex items-center justify-center text-slate-300">{s.icon}</div>
             <p className="text-[12px] font-semibold font-mono text-slate-100">
               <Counter to={s.val} duration={1000} />
@@ -51,5 +59,6 @@ export const UserProgress: React.FC = () => {
         ))}
       </div>
     </div>
+    </GlowWrapper>
   )
 }

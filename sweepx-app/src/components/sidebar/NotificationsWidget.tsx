@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, CheckCheck } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 const TYPE_ICONS: Record<string, string> = {
   achievement: '🏆',
@@ -21,6 +22,7 @@ export const NotificationsWidget: React.FC = () => {
   const unread = notifications.filter(n => !n.read).length
 
   return (
+    <GlowWrapper variant="sm" className="w-full">
     <div className="glass-tile-sm w-full p-5">
       <div className="relative z-[2] flex items-center justify-between mb-3 min-w-0">
         <div className="flex items-center gap-2 text-slate-300">
@@ -70,5 +72,6 @@ export const NotificationsWidget: React.FC = () => {
         )}
       </div>
     </div>
+    </GlowWrapper>
   )
 }

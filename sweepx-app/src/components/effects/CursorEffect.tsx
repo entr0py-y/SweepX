@@ -87,16 +87,7 @@ export function CursorEffect() {
         }
       }
 
-      // ── 2. Purple dot cursor ─────────────────────────────────────
-      ctx.beginPath()
-      ctx.arc(mouseX, mouseY, 4, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(168, 85, 247, 1)'
-      ctx.shadowColor = 'rgba(168, 85, 247, 0.8)'
-      ctx.shadowBlur = 10
-      ctx.fill()
-      ctx.shadowBlur = 0
-
-      // ── 3. Rotating transparent purple square with glow ──────────
+      // ── 2. Rotating transparent purple square with glow ──────────
       // Smooth follow (ease toward mouse)
       sqX += (mouseX - sqX) * 0.08
       sqY += (mouseY - sqY) * 0.08

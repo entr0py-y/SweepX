@@ -168,20 +168,28 @@ export const LoginTile: React.FC<LoginTileProps> = ({ onAuth }) => {
           <motion.button
             type="submit"
             disabled={loading}
-            className="glass-btn relative w-full h-10 mt-1.5 rounded-lg font-display font-bold text-xs text-white overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            whileHover={{ scale: 1.02, filter: 'brightness(1.1)' }}
-            whileTap={{ scale: 0.98 }}
+            className="group relative w-full h-10 mt-1.5 rounded-lg font-display font-bold text-xs text-white overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-white/[0.06] border border-white/10"
+            whileTap={loading ? undefined : { scale: 0.97 }}
           >
-            <span className="relative z-[2] flex items-center justify-center gap-1.5">
-              {loading ? (
+            {loading ? (
+              <span className="relative z-10 flex items-center justify-center gap-1.5">
                 <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <>
+              </span>
+            ) : (
+              <>
+                {/* Label slides out */}
+                <span className="relative z-10 flex items-center justify-center gap-1.5 transition-all duration-300 group-hover:translate-x-10 group-hover:opacity-0">
+                  {mode === 'login' ? 'Login' : 'Sign Up'}
+                </span>
+                {/* Hover label slides in */}
+                <span className="absolute inset-0 z-10 flex items-center justify-center gap-1.5 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
                   {mode === 'login' ? 'Login' : 'Sign Up'}
                   <ArrowRight size={13} />
-                </>
-              )}
-            </span>
+                </span>
+                {/* Growing blob */}
+                <span className="absolute left-[20%] top-[40%] h-2 w-2 scale-[1] rounded-lg bg-neo-v transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:h-full group-hover:w-full group-hover:scale-[1.8]" />
+              </>
+            )}
           </motion.button>
         </form>
 

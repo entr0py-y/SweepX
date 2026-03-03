@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Flame } from 'lucide-react'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -13,6 +14,7 @@ export const DailyStreak: React.FC<{ streak?: number }> = ({ streak = 12 }) => {
   }
 
   return (
+    <GlowWrapper variant="sm" className="w-full">
     <div className="glass-tile-sm w-full p-5">
       <div className="relative z-[2] flex items-center justify-between mb-3 min-w-0">
         <span className="text-2xs uppercase tracking-[0.1em] text-slate-500 font-medium">Daily Streak</span>
@@ -45,8 +47,14 @@ export const DailyStreak: React.FC<{ streak?: number }> = ({ streak = 12 }) => {
         })}
       </div>
 
-      <div className="relative z-[2] bg-white/[0.04] rounded-xl p-3 text-center"
-        style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="relative z-[2] rounded-xl p-3 text-center"
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          backdropFilter: 'url("#liquid-glass-filter") blur(2px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          boxShadow: 'inset 1px 1px 1px -0.5px rgba(255,255,255,0.18), inset -1px -1px 1px -0.5px rgba(0,0,0,0.3), inset 0 0 4px 3px rgba(255,255,255,0.02)',
+        }}>
         <p className="text-[11px] text-slate-400">
           {streak >= 7
             ? <>Keep the streak alive today.</>
@@ -55,5 +63,6 @@ export const DailyStreak: React.FC<{ streak?: number }> = ({ streak = 12 }) => {
         <p className="text-[11px] text-slate-500 font-semibold mt-1">+50 bonus XP for every 7-day streak</p>
       </div>
     </div>
+    </GlowWrapper>
   )
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -52,24 +53,41 @@ export const GlowBtn: React.FC<GBProps> = ({
   children, variant = 'primary', loading, icon, iconRight, className, disabled, ...rest
 }) => {
   const cls  = variant === 'ghost' ? 'btn-ghost' : variant === 'sm' ? 'btn-sm' : variant === 'danger' ? 'btn-primary bg-gradient-to-r from-red-700 to-red-500 shadow-glow-v' : 'btn-primary'
+  const blobColor = variant === 'ghost' ? 'bg-white/[0.15]' : variant === 'danger' ? 'bg-red-600' : 'bg-neo-v'
   const isDisabled = disabled || loading
   return (
     <motion.button
-      className={cn(cls, isDisabled && 'opacity-40 cursor-not-allowed', className)}
-      whileHover={isDisabled ? undefined : { scale: 1.03, filter: 'brightness(1.1)' }}
-      whileTap={isDisabled  ? undefined : { scale: 0.96 }}
-      transition={{ duration: 0.15 }}
+      className={cn(cls, 'group relative overflow-hidden', isDisabled && 'opacity-40 cursor-not-allowed', className)}
+      whileTap={isDisabled ? undefined : { scale: 0.96 }}
+      transition={{ duration: 0.12 }}
       disabled={isDisabled}
       {...rest as any}
     >
       {loading ? (
-        <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+        <svg className="animate-spin w-3.5 h-3.5 relative z-10" viewBox="0 0 24 24" fill="none">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
         </svg>
-      ) : icon}
-      {children}
-      {!loading && iconRight}
+      ) : (
+        <>
+          {/* Static label — slides out right on hover */}
+          <span className="relative z-10 inline-flex items-center gap-2 transition-all duration-300 group-hover:translate-x-10 group-hover:opacity-0">
+            {icon}{children}{iconRight}
+          </span>
+          {/* Hover label — slides in from right */}
+          <span className="absolute inset-0 z-10 flex items-center justify-center gap-1.5 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+            {icon ?? <ArrowRight size={13} />}{children}
+          </span>
+          {/* Growing blob */}
+          {!isDisabled && (
+            <span className={cn(
+              'absolute left-[20%] top-[40%] h-2 w-2 scale-[1] rounded-lg transition-all duration-300',
+              'group-hover:left-[0%] group-hover:top-[0%] group-hover:h-full group-hover:w-full group-hover:scale-[1.8]',
+              blobColor,
+            )} />
+          )}
+        </>
+      )}
     </motion.button>
   )
 }

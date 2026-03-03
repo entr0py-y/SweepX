@@ -26,9 +26,7 @@ export const HeroSection: React.FC<HeroProps> = ({ id, onStart, authed, onAuth }
   return (
     <section id={id} ref={heroRef} className="relative overflow-hidden min-h-0 md:min-h-[420px] flex items-center">
 
-      {/* BG layers */}
-      <div className="absolute inset-0 bg-void-base" />
-      <div className="absolute inset-0 bg-hero-grain opacity-60" />
+
 
       {/* Content — two-column: left copy + right tile */}
       <div className="relative z-10 w-full px-6 md:px-10 py-6 md:py-14 flex items-center justify-between gap-12">

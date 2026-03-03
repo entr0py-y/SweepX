@@ -10,6 +10,14 @@ export default {
           p: '#a855f7',   // highlight purple
           s: '#c084fc',   // soft purple
         },
+        /* shadcn-compatible semantic colors */
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        border: 'var(--border)',
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],

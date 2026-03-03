@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { SecHead, cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button'
 
 export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
   const { rewards, purchaseReward, equipReward, loadingRewards, pts } = useAppStore(s => ({
@@ -45,26 +47,22 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
 
       <div className="relative z-10 flex items-center justify-between mb-6">
         <div className="text-2xs uppercase tracking-[0.12em] text-slate-500">Featured Reward</div>
-        <button
-          className="text-xs text-slate-300 hover:text-white transition-colors"
-          onClick={() => setShowAll(prev => !prev)}>
-          {showAll ? 'Collapse' : 'View All'}
-        </button>
+        <InteractiveHoverButton
+          text={showAll ? 'Collapse' : 'View All'}
+          size="sm"
+          onClick={() => setShowAll(prev => !prev)}
+        />
       </div>
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {/* ── Featured card ── */}
         {featured && (
+          <GlowWrapper variant="lg" className="lg:col-span-2">
           <motion.div
             key={featured.id}
-            className="lg:col-span-2 glass-tile p-9 flex flex-col gap-6 cursor-pointer"
-            style={{ transform: 'scale(1.01)' }}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
+            className="glass-tile p-9 flex flex-col gap-6 cursor-pointer h-full"
             whileHover={{ y: -4, transition: { duration: 0.2, ease: 'easeOut' } }}
             onClick={() => setModal(featured.id)}>
-
             <div className="relative z-[2] flex items-start justify-between gap-3">
               <div className="text-5xl select-none">{featured.image}</div>
               <span className="text-2xs px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400 capitalize">{featured.rarity}</span>
@@ -75,18 +73,16 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
             </div>
             <div className="relative z-[2] mt-auto flex items-center justify-between pt-3">
               <span className="text-sm font-mono font-semibold text-white/90">{featured.cost.toLocaleString()} pts</span>
-              <button
+              <InteractiveHoverButton
+                text={featured.owned ? 'Owned' : 'Buy'}
+                size="sm"
+                disabled={featured.owned || pts < featured.cost || loadingRewards.has(featured.id)}
+                blobClass={featured.owned ? 'bg-white/10' : 'bg-neo-v'}
                 onClick={e => { e.stopPropagation(); if (!featured.owned && pts >= featured.cost) purchaseReward(featured.id) }}
-                className={cn(
-                  'glass-btn px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out',
-                  'hover:scale-[1.03]',
-                  (featured.owned || pts < featured.cost) && 'opacity-50 cursor-not-allowed'
-                )}
-                disabled={featured.owned || pts < featured.cost || loadingRewards.has(featured.id)}>
-                {featured.owned ? 'Owned' : 'Buy'}
-              </button>
+              />
             </div>
           </motion.div>
+          </GlowWrapper>
         )}
 
         {/* ── Secondary cards ── */}
@@ -95,15 +91,12 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
             const loading = loadingRewards.has(r.id)
             const canBuy  = !r.owned && pts >= r.cost
             return (
-              <motion.div key={r.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ delay: i * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="glass-tile-sm p-6 flex flex-col gap-4 cursor-pointer"
-                whileHover={{ y: -3, transition: { duration: 0.2, ease: 'easeOut' } }}
+              <div key={r.id}
                 onClick={() => setModal(r.id)}>
-
+                <GlowWrapper variant="sm">
+                <motion.div
+                  className="glass-tile-sm p-6 flex flex-col gap-4 cursor-pointer"
+                  whileHover={{ y: -3, transition: { duration: 0.2, ease: 'easeOut' } }}>
                 <div className="relative z-[2] flex items-start justify-between gap-3">
                   <span className="text-4xl select-none">{r.image}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400 capitalize">{r.rarity}</span>
@@ -114,18 +107,17 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
                 </div>
                 <div className="relative z-[2] mt-auto flex items-center justify-between pt-1">
                   <span className="text-sm font-mono font-semibold text-white/90">{r.cost.toLocaleString()} pts</span>
-                  <button
+                  <InteractiveHoverButton
+                    text={r.owned ? 'Owned' : 'Buy'}
+                    size="xs"
+                    disabled={!canBuy || loading}
+                    blobClass={r.owned ? 'bg-white/10' : 'bg-neo-v'}
                     onClick={e => { e.stopPropagation(); if (canBuy) purchaseReward(r.id) }}
-                    className={cn(
-                      'glass-btn px-4 py-1.5 rounded-xl text-xs font-semibold text-white transition-all duration-200 ease-out',
-                      'hover:scale-[1.03]',
-                      !canBuy && 'opacity-40 cursor-not-allowed'
-                    )}
-                    disabled={!canBuy || loading}>
-                    {r.owned ? 'Owned' : 'Buy'}
-                  </button>
+                  />
                 </div>
-              </motion.div>
+                </motion.div>
+                </GlowWrapper>
+              </div>
             )
           })}
         </div>
@@ -140,11 +132,13 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
             onClick={() => setModal(null)}>
             <div className="absolute inset-0 bg-s-0/80 backdrop-blur-sm" />
             <motion.div
-              className="glass-tile relative max-w-sm w-full p-7 z-10"
+              className="relative max-w-sm w-full z-10"
               initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 8 }}
               onClick={e => e.stopPropagation()}>
 
+              <GlowWrapper variant="lg">
+              <div className="glass-tile p-7">
               <button onClick={() => setModal(null)} className="relative z-[2] absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
                 <X size={14} />
               </button>
@@ -157,24 +151,23 @@ export const RewardsSection: React.FC<{ id?: string }> = ({ id }) => {
                 <span className="text-sm font-mono font-bold text-white/90">{selected.cost.toLocaleString()} pts</span>
                 {selected.owned
                   ? selected.type !== 'title'
-                    ? <button
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/[0.08] hover:bg-white/[0.12] transition-all duration-200"
-                        onClick={() => { equipReward(selected.id); setModal(null) }}>
-                        {selected.equipped ? 'Unequip' : 'Equip'}
-                      </button>
+                    ? <InteractiveHoverButton
+                        text={selected.equipped ? 'Unequip' : 'Equip'}
+                        size="sm"
+                        blobClass="bg-white/20"
+                        onClick={() => { equipReward(selected.id); setModal(null) }}
+                      />
                     : <span className="text-neo-s text-sm font-semibold flex items-center gap-1"><CheckCircle size={14} /> Owned</span>
-                  : <button
-                      className={cn(
-                        'glass-btn px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out',
-                        'hover:scale-[1.03]',
-                        (pts < selected.cost || loadingRewards.has(selected.id)) && 'opacity-50 cursor-not-allowed'
-                      )}
+                  : <InteractiveHoverButton
+                      text={loadingRewards.has(selected.id) ? '...' : 'Purchase'}
+                      size="md"
                       disabled={pts < selected.cost || loadingRewards.has(selected.id)}
-                      onClick={() => purchaseReward(selected.id)}>
-                      Purchase
-                    </button>
+                      onClick={() => purchaseReward(selected.id)}
+                    />
                 }
               </div>
+            </div>
+            </GlowWrapper>
             </motion.div>
           </motion.div>
         )}

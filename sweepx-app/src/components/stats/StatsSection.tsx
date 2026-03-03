@@ -1,11 +1,11 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip,
   PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts'
 import { BarChart3, TrendingUp, Leaf, Droplets, Recycle, Wind } from 'lucide-react'
 import { SecHead, Counter, cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 const AREA_DATA = [
   { date: 'Mon', pts: 120 }, { date: 'Tue', pts: 300 }, { date: 'Wed', pts: 180 },
@@ -46,12 +46,9 @@ export const StatsSection: React.FC<{ id?: string }> = ({ id }) => (
       {IMPACT_CARDS.map((c, i) => {
         const Icon = c.icon
         return (
-          <motion.div key={c.label}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.08 }}
-            className="glass-tile-sm p-5 flex flex-col gap-3">
+          <div key={c.label}>
+            <GlowWrapper variant="sm">
+            <div className="glass-tile-sm p-5 flex flex-col gap-3">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-12 rounded-t-[20px]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%)' }} />
             <div className={cn('relative z-[2] w-9 h-9 rounded-2xl flex items-center justify-center', c.bg)}>
               <Icon size={16} className={c.color} />
@@ -62,7 +59,9 @@ export const StatsSection: React.FC<{ id?: string }> = ({ id }) => (
               </p>
               <p className="text-2xs text-slate-500 mt-0.5 leading-relaxed">{c.label}</p>
             </div>
-          </motion.div>
+          </div>
+          </GlowWrapper>
+          </div>
         )
       })}
     </div>
@@ -70,7 +69,8 @@ export const StatsSection: React.FC<{ id?: string }> = ({ id }) => (
     {/* Charts row */}
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       {/* Area chart — 2/3 */}
-      <div className="lg:col-span-2 glass-tile p-5">
+      <GlowWrapper variant="lg" className="lg:col-span-2">
+      <div className="glass-tile p-5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[20px]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%)' }} />
         <div className="relative z-[2] flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -96,8 +96,10 @@ export const StatsSection: React.FC<{ id?: string }> = ({ id }) => (
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      </GlowWrapper>
 
       {/* Pie — 1/3 */}
+      <GlowWrapper variant="lg">
       <div className="glass-tile p-5 flex flex-col">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[20px]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%)' }} />
         <div className="relative z-[2] flex items-center gap-2 mb-4">
@@ -124,6 +126,7 @@ export const StatsSection: React.FC<{ id?: string }> = ({ id }) => (
           ))}
         </div>
       </div>
+      </GlowWrapper>
     </div>
   </section>
 )

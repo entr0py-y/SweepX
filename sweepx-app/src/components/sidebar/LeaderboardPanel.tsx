@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { Counter, cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 const RANGE_OPTS = ['weekly', 'monthly', 'alltime'] as const
 
@@ -19,6 +20,7 @@ export const LeaderboardPanel: React.FC = () => {
   const shown = leaderboard.slice(0, 15)
 
   return (
+    <GlowWrapper variant="sm" className="w-full">
     <div className="glass-tile-sm w-full p-5">
       <div className="relative z-[2] flex items-center justify-between mb-3 min-w-0">
         <div className="flex items-center gap-2">
@@ -57,5 +59,6 @@ export const LeaderboardPanel: React.FC = () => {
         ))}
       </div>
     </div>
+    </GlowWrapper>
   )
 }

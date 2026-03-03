@@ -4,6 +4,14 @@
 
 /* --- Design Tokens ------------------------------------------------------------ */
 :root {
+  /* shadcn-compatible semantic tokens (used by glowing-effect and ui components) */
+  --background: #0A0A0F;
+  --foreground: #dde0f0;
+  --border: rgba(255, 255, 255, 0.09);
+  --muted: #1A1A24;
+  --muted-foreground: rgba(221, 224, 240, 0.55);
+  --black: #0A0A0F;
+
   /* Surfaces */
   --s0: #0A0A0F;
   --s1: #111118;
@@ -56,11 +64,7 @@
     overflow-x: hidden;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    body, a, button, input, textarea, select, [role="button"] {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Ccircle cx='5' cy='5' r='4' fill='%237c3aed'/%3E%3C/svg%3E") 5 5, auto;
-    }
-  }
+
 
   /* Scrollbar */
   ::-webkit-scrollbar {
@@ -114,33 +118,42 @@
     border-radius: 16px;
   }
 
-  /* ── 3D Liquid Glass Surface ─────────────────────────────────── */
+  /* ── Liquid Glass Surface — matches glowing-effect-demo inline styles ─── */
   .glass-tile {
     position: relative;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(25px) saturate(160%);
-    -webkit-backdrop-filter: blur(25px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: url("#liquid-glass-filter") blur(3px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
     overflow: hidden;
     box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.50),
-      0 2px 8px rgba(0, 0, 0, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+      0 0 8px rgba(0, 0, 0, 0.04),
+      0 4px 16px rgba(0, 0, 0, 0.18),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 0.18),
+      inset -3px -3px 0.5px -3px rgba(0, 0, 0, 0.5),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.28),
+      inset -1px -1px 1px -0.5px rgba(0, 0, 0, 0.35),
+      inset 0 0 8px 6px rgba(255, 255, 255, 0.03),
+      inset 0 0 2px 2px rgba(255, 255, 255, 0.025),
+      0 0 20px rgba(168, 85, 247, 0.06);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
   }
 
   .glass-tile:hover {
-    transform: scale(1.02);
+    transform: scale(1.015);
     box-shadow:
-      0 14px 50px rgba(0, 0, 0, 0.55),
-      0 4px 12px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+      0 0 10px rgba(0, 0, 0, 0.05),
+      0 6px 24px rgba(0, 0, 0, 0.22),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 0.24),
+      inset -3px -3px 0.5px -3px rgba(0, 0, 0, 0.5),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.36),
+      inset -1px -1px 1px -0.5px rgba(0, 0, 0, 0.35),
+      inset 0 0 8px 6px rgba(255, 255, 255, 0.05),
+      inset 0 0 2px 2px rgba(255, 255, 255, 0.035),
+      0 0 32px rgba(168, 85, 247, 0.12);
   }
 
-  /* Diagonal light reflection streak */
   .glass-tile::before {
     content: '';
     position: absolute;
@@ -149,52 +162,51 @@
     pointer-events: none;
     z-index: 1;
     background: linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0.06) 20%,
-      transparent 50%
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.01) 30%,
+      transparent 60%
     );
   }
 
-  /* Bottom depth gradient */
   .glass-tile::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 0;
-    background: linear-gradient(
-      180deg,
-      transparent 60%,
-      rgba(0, 0, 0, 0.20) 100%
-    );
+    content: none;
   }
 
   /* Smaller variant for sidebar cards */
   .glass-tile-sm {
     position: relative;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(22px) saturate(150%);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: url("#liquid-glass-filter") blur(3px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
     overflow: hidden;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.45),
-      0 2px 6px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+      0 0 8px rgba(0, 0, 0, 0.04),
+      0 4px 16px rgba(0, 0, 0, 0.18),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 0.18),
+      inset -3px -3px 0.5px -3px rgba(0, 0, 0, 0.5),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.28),
+      inset -1px -1px 1px -0.5px rgba(0, 0, 0, 0.35),
+      inset 0 0 8px 6px rgba(255, 255, 255, 0.03),
+      inset 0 0 2px 2px rgba(255, 255, 255, 0.025),
+      0 0 20px rgba(168, 85, 247, 0.06);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
   }
 
   .glass-tile-sm:hover {
-    transform: scale(1.015);
+    transform: scale(1.012);
     box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.50),
-      0 3px 10px rgba(0, 0, 0, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.10),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+      0 0 10px rgba(0, 0, 0, 0.05),
+      0 6px 24px rgba(0, 0, 0, 0.22),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 0.24),
+      inset -3px -3px 0.5px -3px rgba(0, 0, 0, 0.5),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.36),
+      inset -1px -1px 1px -0.5px rgba(0, 0, 0, 0.35),
+      inset 0 0 8px 6px rgba(255, 255, 255, 0.05),
+      inset 0 0 2px 2px rgba(255, 255, 255, 0.035),
+      0 0 32px rgba(168, 85, 247, 0.12);
   }
 
   .glass-tile-sm::before {
@@ -205,25 +217,15 @@
     pointer-events: none;
     z-index: 1;
     background: linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.04) 18%,
-      transparent 45%
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.01) 30%,
+      transparent 60%
     );
   }
 
   .glass-tile-sm::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 0;
-    background: linear-gradient(
-      180deg,
-      transparent 65%,
-      rgba(0, 0, 0, 0.18) 100%
-    );
+    content: none;
   }
 
   /* Glass button inside tiles */

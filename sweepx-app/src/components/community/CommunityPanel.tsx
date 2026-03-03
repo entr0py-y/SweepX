@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Users } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { SecHead, cn } from '../shared/primitives'
+import { GlowWrapper } from '@/components/ui/glow-wrapper'
 
 const ACTIVITY_ICONS: Record<string, string> = {
   mission:     '✅',
@@ -49,9 +50,10 @@ export const CommunityPanel: React.FC<{ id?: string }> = ({ id }) => {
     <section id={id} className="px-6 md:px-10 py-10">
       <SecHead tag="Community" title="Friend" accent="Activity" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
         {/* Activity feed — 3/5 */}
-        <div className="lg:col-span-3 glass-tile p-5 flex flex-col gap-2">
+        <GlowWrapper variant="lg" className="lg:col-span-3 h-full">
+        <div className="glass-tile p-5 flex flex-col gap-2 h-full">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[28px]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%)' }} />
           <div className="relative z-[2] flex items-center gap-2 mb-2">
             <Users size={14} className="text-slate-400" />
@@ -63,7 +65,7 @@ export const CommunityPanel: React.FC<{ id?: string }> = ({ id }) => {
           <div className="relative z-[2] flex flex-col gap-2 max-h-72 overflow-y-auto pr-0.5">
             {friendActivity.map((a, i) => (
               <motion.div key={i}
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 1, y: 0 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
                 className="flex items-start gap-2.5 p-2.5 rounded-2xl hover:bg-white/[0.03] transition-colors">
                 <img src={a.avatar} alt={a.username} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10 shrink-0" />
@@ -81,9 +83,11 @@ export const CommunityPanel: React.FC<{ id?: string }> = ({ id }) => {
             ))}
           </div>
         </div>
+        </GlowWrapper>
 
         {/* Chat — 2/5 */}
-        <div className="lg:col-span-2 glass-tile p-0 flex flex-col">
+        <GlowWrapper variant="lg" className="lg:col-span-2 h-full">
+        <div className="glass-tile p-0 flex flex-col h-full">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[28px] z-0" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03) 0%, transparent 100%)' }} />
           <div className="relative z-[2] px-4 py-3 border-b border-white/[0.08] flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse" />
@@ -94,7 +98,7 @@ export const CommunityPanel: React.FC<{ id?: string }> = ({ id }) => {
             <AnimatePresence initial={false}>
               {chatMessages.map((m, i) => (
                 <motion.div key={m.id}
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 1, y: 0 }} animate={{ opacity: 1, y: 0 }}
                   className={cn('flex flex-col', m.userId === userId ? 'items-end' : 'items-start')}>
                   <div className={cn('px-3 py-1.5 rounded-2xl max-w-[80%] text-2xs leading-snug',
                     m.userId === userId ? 'bg-white/[0.08] text-white rounded-br-sm' : 'bg-white/[0.04] text-slate-300 rounded-bl-sm')}>
@@ -119,6 +123,7 @@ export const CommunityPanel: React.FC<{ id?: string }> = ({ id }) => {
             </button>
           </form>
         </div>
+        </GlowWrapper>
       </div>
     </section>
   )
