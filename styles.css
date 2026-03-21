@@ -112,7 +112,7 @@ body {
   display: none
 }
 
-/* ── Auth mode — status bar floats over full-height screen ── */
+/* ── Auth mode — full-height, no nav ── */
 .app-shell.auth-mode .app-inner {
   height: 100%;
   overflow: hidden
@@ -120,6 +120,14 @@ body {
 
 .app-shell.auth-mode #bnav {
   display: none !important
+}
+
+/* Auth screen fills the full container */
+.app-shell.auth-mode #s-auth {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  position: relative
 }
 
 /* ── Mobile: full-bleed, no frame ── */
