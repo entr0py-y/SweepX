@@ -678,14 +678,26 @@ async function subRpt() {
   if (ieEl) ieEl.textContent = ''; if (leEl) leEl.textContent = '';
 
   const btn = document.getElementById('rbtn');
-  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Analyzing…`;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Uploading…`;
   _setProgress(0);
 
-  let progressIv;
+  let progressIv = _simProgress(_setProgress);
   try {
-    // ── Pre-Validation ──
-    const validation = await validateBeforeImage(_rImgFile);
-    if (!validation.skipped && !validation.passed) {
+    // ── 1. Upload Image First ──
+    let imageUrl;
+    try {
+      imageUrl = await uploadImage(_rImgFile, 'report-images');
+    } catch(e) {
+      throw new Error("Couldn't upload your photo. Check your connection and try again.");
+    }
+
+    // ── 2. Pre-Validation via NVIDIA ──
+    btn.innerHTML = `<span class="spin"></span> Analyzing…`;
+    const validation = await validateBeforeImage(imageUrl);
+    
+    if (!validation.skipped && validation.has_garbage === false) {
+      if (progressIv) clearInterval(progressIv);
+      _setProgress(0);
       btn.disabled = false; btn.textContent = 'Submit Report';
       if (ieEl) ieEl.textContent = validation.reason || 'No garbage detected in this photo. Please capture a location with visible garbage.';
       
@@ -695,22 +707,17 @@ async function subRpt() {
         uz.onclick = () => camera.open((b, url) => _handleReportCamera(b, url), 'report-image-input', 'ie');
       }
 
-      if (validation.garbage_type === null && validation.confidence >= 0.60) {
+      if (validation.confidence >= 0.60) {
         if (typeof showToast !== 'undefined') showToast({ type: 'error', title: 'Invalid photo', subtitle: 'This photo does not appear to show a garbage location.' });
         else alert('This photo does not appear to show a garbage location.');
       }
       return;
     }
 
-    // ── Upload & DB Insert ──
-    btn.innerHTML = `<span class="spin"></span> Uploading…`;
-    progressIv = _simProgress(_setProgress);
-
+    // ── 3. Upload & DB Insert ──
+    btn.innerHTML = `<span class="spin"></span> Saving…`;
     await createReport({ 
-      imageFile: _rImgFile, description: desc, location: loc, lat: _rLat, lng: _rLng, userId: S.user?.id,
-      preValidationStatus: validation.skipped ? 'skipped' : 'passed',
-      preValidationConfidence: validation.confidence || null,
-      preValidationReason: validation.reason || null
+      imageUrl: imageUrl, description: desc, location: loc, lat: _rLat, lng: _rLng, userId: S.user?.id
     });
 
     // Complete progress bar
@@ -723,7 +730,8 @@ async function subRpt() {
     if (S.user?.id) { try { const updated = await getProfile(S.user.id); S.user = updated; } catch (_) {} }
 
     _resetReportForm();
-    document.getElementById('rpt-ct').innerHTML = `<div class="suc"><div class="suc-ring">${I.ok}</div><div class="suc-t">Report Submitted!</div><div style="color:var(--accent);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">+50 pts</div><div class="suc-s">Your report is now a mission.</div></div>`;
+    const ct = document.getElementById('rpt-ct');
+    if (ct) ct.innerHTML = `<div class="suc"><div class="suc-ring">${I.ok}</div><div class="suc-t">Report Submitted!</div><div style="color:var(--accent);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">+50 pts</div><div class="suc-s">Your report is now a mission.</div></div>`;
     setTimeout(() => go('home'), 1800);
   } catch (e) {
     if (progressIv) clearInterval(progressIv);

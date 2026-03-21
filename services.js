@@ -3,22 +3,15 @@
 ──────────────────────────────────────────────────────── */
 
 /* ─── Pre-validation AI ─── */
-async function validateBeforeImage(imageBlob) {
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader(); reader.onload = e => resolve(e.target.result);
-    reader.onerror = () => reject(new Error('Could not read image')); reader.readAsDataURL(imageBlob);
-  });
-  const mediaType = imageBlob.type || 'image/jpeg';
-  const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
-
-  const res = await fetch('/api/validate-before', {
+async function validateBeforeImage(imageUrl) {
+  const res = await fetch('/api/verify-cleanup', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_base64: base64Data, media_type: mediaType })
+    body: JSON.stringify({ mode: 'before', before_image_url: imageUrl })
   });
 
   let data;
-  try { data = await res.json(); } catch { return { passed: true, skipped: true }; }
-  if (!res.ok) return { passed: true, skipped: true, error: data?.error };
+  try { data = await res.json(); } catch { return { has_garbage: true, skipped: true }; }
+  if (!res.ok) return { has_garbage: true, skipped: true, error: data?.error };
   return data;
 }
 
@@ -72,13 +65,8 @@ async function updateProfileLastActive(userId) {
 }
 
 /* ─── Reports ─── */
-async function createReport({ imageFile, description, location, lat, lng, userId, preValidationStatus, preValidationConfidence, preValidationReason }) {
-  // 1. Upload image
-  let imageUrl;
-  try { imageUrl = await uploadImage(imageFile, 'report-images'); }
-  catch (e) { throw new Error("Couldn't upload your photo. Check your connection and try again."); }
-
-  // 2. Insert report (DB trigger auto-creates mission)
+async function createReport({ imageUrl, description, location, lat, lng, userId }) {
+  // 1. Insert report (DB trigger auto-creates mission)
   const { data, error } = await _sb.from('reports')
     .insert({
       user_id: userId || null,
@@ -88,10 +76,7 @@ async function createReport({ imageFile, description, location, lat, lng, userId
       lat: lat || null,
       lng: lng || null,
       status: 'open',
-      capture_method: 'camera',
-      pre_validation_status: preValidationStatus || 'not_checked',
-      pre_validation_confidence: preValidationConfidence || null,
-      pre_validation_reason: preValidationReason || null
+      capture_method: 'camera'
     })
     .select('id, image_url, location, description, created_at, user_id')
     .single();

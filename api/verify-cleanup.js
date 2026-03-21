@@ -8,7 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 const { validateImageUrl, fetchImageAsBase64 } = require('../lib/imageUtils');
-const { analyzeCleanupImages, parseVerificationResponse, VISION_MODEL } = require('../lib/verifyCleanup');
+const { analyzeCleanupImages, parseVerificationResponse, analyzeBeforeImage, parseBeforeResponse, VISION_MODEL } = require('../lib/verifyCleanup');
 
 // Supabase client (server-side)
 function getSupabase() {
@@ -47,22 +47,47 @@ module.exports = async function handler(req, res) {
   }
 
   const startTime = Date.now();
-  const { mission_id, before_image_url, after_image_url, client_duplicate_check } = req.body || {};
+  const { mode = 'after', mission_id, before_image_url, after_image_url, client_duplicate_check } = req.body || {};
 
   // ── Input validation ──────────────────────────────────
-  if (!mission_id || !before_image_url || !after_image_url) {
-    return res.status(400).json({
-      error: 'Required: mission_id, before_image_url, after_image_url'
-    });
+  if (!before_image_url) {
+    return res.status(400).json({ error: 'Required: before_image_url' });
   }
 
-  let validBefore, validAfter;
-  try {
-    validBefore = validateImageUrl(before_image_url);
-    validAfter = validateImageUrl(after_image_url);
-  } catch (err) {
-    return res.status(400).json({ error: err.message });
+  let validBefore;
+  try { validBefore = validateImageUrl(before_image_url); }
+  catch (err) { return res.status(400).json({ error: err.message }); }
+
+  if (mode === 'before') {
+    // ── Mode: BEFORE (Pre-validation check using NVIDIA) ─
+    let beforeImg;
+    try {
+      beforeImg = await fetchImageAsBase64(validBefore);
+    } catch (err) {
+      // If we fail to fetch, allow through defensively
+      return res.status(200).json({ has_garbage: true, confidence: 1.0, reason: 'Failed to fetch image logic bypassed', skipped: true });
+    }
+
+    try {
+      const result = await analyzeBeforeImage(beforeImg.base64, beforeImg.mediaType);
+      const parsed = parseBeforeResponse(result.rawText);
+      return res.status(200).json(parsed);
+    } catch (err) {
+      console.warn("Before-validation failed:", err.message);
+      return res.status(200).json({ has_garbage: true, confidence: 0, reason: 'Validation service unavailable. Allowed.', skipped: true });
+    }
   }
+
+  // ──────────────────────────────────────────────────────
+  // ── Mode: AFTER (Verification mapped to database) ─────
+  // ──────────────────────────────────────────────────────
+  if (!mission_id || !after_image_url) {
+    return res.status(400).json({ error: 'Required for "after" mode: mission_id, after_image_url' });
+  }
+
+  let validAfter;
+  try { validAfter = validateImageUrl(after_image_url); }
+  catch (err) { return res.status(400).json({ error: err.message }); }
 
   let supabase;
   try { supabase = getSupabase(); } catch (err) {
