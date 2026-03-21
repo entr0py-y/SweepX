@@ -1,3 +1,4 @@
+/* ── Reset ── */
 *,
 *::before,
 *::after {
@@ -6,24 +7,8 @@
   padding: 0
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #1A1A1A;
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased
-}
-
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh
-}
-
 :root {
+  --app-height: 100vh;
   --screen-bg: transparent;
   --surface: rgba(255,255,255,0.04);
   --surface-2: rgba(255,255,255,0.06);
@@ -39,15 +24,168 @@ body {
   --featured-border: rgba(180, 255, 0, 0.12)
 }
 
-#phone {
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  background: #0A0A0A;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%
+}
+
+/* ── Desktop canvas — centers the phone preview on large screens ── */
+.desktop-canvas {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0A0A0A;
+  position: relative;
+  overflow: hidden
+}
+
+.desktop-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 40%, rgba(180,255,0,0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 70% 70%, rgba(20,20,20,0.8) 0%, transparent 60%);
+  pointer-events: none
+}
+
+/* ── App shell — the "phone" container ── */
+.app-shell {
+  position: relative;
   width: 390px;
   height: 844px;
+  height: min(844px, 92dvh);
   border-radius: 44px;
   overflow: hidden;
-  position: relative;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
   background: #080808;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 32px 80px rgba(0,0,0,0.9),
+    0 8px 24px rgba(0,0,0,0.6);
+  flex-shrink: 0;
+  z-index: 1;
+  -webkit-overflow-scrolling: auto;
   transition: background-color .3s ease
+}
+
+/* Subtle inner bezel ring */
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  pointer-events: none;
+  z-index: 1000
+}
+
+/* ── App inner — holds all screens ── */
+.app-inner {
+  width: 100%;
+  height: calc(100% - 44px - 68px);
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none
+}
+
+.app-inner::-webkit-scrollbar {
+  display: none
+}
+
+/* ── Auth mode — status bar floats over full-height screen ── */
+.app-shell.auth-mode .status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  background: transparent;
+  color: #fff
+}
+
+.app-shell.auth-mode .app-inner {
+  height: 100%;
+  overflow: hidden
+}
+
+.app-shell.auth-mode #bnav {
+  display: none !important
+}
+
+/* ── Mobile: full-bleed, no frame ── */
+@media (max-width: 768px) {
+  .desktop-canvas {
+    display: block;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    height: 100dvh
+  }
+
+  .desktop-canvas::before {
+    display: none
+  }
+
+  .app-shell {
+    width: 100%;
+    width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px)
+  }
+
+  .app-shell::before {
+    display: none
+  }
+
+  /* Hide fake status bar — OS handles it on mobile */
+  .status-bar {
+    display: none
+  }
+
+  /* Compensate for hidden status bar */
+  .app-inner {
+    height: calc(100% - 68px)
+  }
+
+  .app-shell.auth-mode .app-inner {
+    height: 100%
+  }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .app-shell {
+    height: 100dvh
+  }
+}
+
+@supports not (height: 100dvh) {
+  .app-shell {
+    height: var(--app-height, 100vh)
+  }
 }
 
 .status-bar {
@@ -100,27 +238,6 @@ body {
   position: relative
 }
 
-#screen-area::-webkit-scrollbar {
-  display: none
-}
-
-/* Auth mode â€” let auth screen fill the whole phone */
-#phone.auth-mode .status-bar {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  z-index: 20;
-  background: transparent;
-  color: #fff
-}
-
-#phone.auth-mode #screen-area {
-  height: 844px;
-  overflow: hidden
-}
-
-#phone.auth-mode #bnav {
-  display: none !important
-}
 
 .scr {
   display: none;
@@ -172,7 +289,7 @@ body {
   -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-evenly;
   padding: 0 8px 10px;
   z-index: 100;
   transition: background .3s ease, border-color .3s ease
@@ -243,8 +360,17 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: none;
   cursor: pointer;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   transition: transform 80ms ease, background .3s ease
+}
+
+/* Wrapper that occupies 1fr of the nav so the FAB slot equals .nt slots */
+.fab-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%
 }
 
 .fab:active {

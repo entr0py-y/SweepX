@@ -160,7 +160,8 @@ async function doEnter() {
     const profile = await getOrCreateProfile(uInput);
     saveSession(profile);
     await wait(300);
-    document.getElementById('phone').classList.remove('auth-mode');
+    const _phone = document.getElementById('phone') || document.getElementById('phone-frame');
+    if (_phone) _phone.classList.remove('auth-mode');
     go('home');
   } catch (e) {
     if (errEl) { errEl.textContent = e.message || 'Something went wrong. Please try again.'; errEl.classList.add('show') }
