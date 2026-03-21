@@ -34,87 +34,23 @@
       min-height: 100vh
     }
 
-    [data-theme="home"] {
-      --screen-bg: #000;
-      --surface: #0F0F0F;
-      --surface-2: #161616;
-      --surface-3: #1C1C1C;
-      --accent: #22FF88;
-      --accent-dim: rgba(34, 255, 136, 0.08);
-      --text-primary: #FFF;
-      --text-secondary: #A1A1A1;
-      --text-muted: #555;
+    :root {
+      --screen-bg: #000000;
+      --surface: #0B1A12;
+      --surface-2: #0F2018;
+      --surface-3: #132A1E;
+      --accent: #B4FF00;
+      --accent-dim: rgba(180, 255, 0, 0.08);
+      --text-primary: #FFFFFF;
+      --text-secondary: #7A9980;
+      --text-muted: #3D5C45;
       --border-color: rgba(255, 255, 255, 0.07);
       --nav-bg: rgba(0, 0, 0, 0.96);
-      --featured-bg: #111111;
-      --featured-border: rgba(255, 255, 255, 0.1)
+      --featured-bg: #0B1A12;
+      --featured-border: rgba(180, 255, 0, 0.15)
     }
 
-    [data-theme="missions"] {
-      --screen-bg: #000;
-      --surface: #0F0F0F;
-      --surface-2: #161616;
-      --surface-3: #1C1C1C;
-      --accent: #4D8EFF;
-      --accent-dim: rgba(77, 142, 255, 0.08);
-      --text-primary: #FFF;
-      --text-secondary: #8EA8C8;
-      --text-muted: #555;
-      --border-color: rgba(255, 255, 255, 0.07);
-      --nav-bg: rgba(0, 0, 0, 0.96);
-      --featured-bg: #111111;
-      --featured-border: rgba(255, 255, 255, 0.1)
-    }
-
-    [data-theme="report"] {
-      --screen-bg: #000;
-      --surface: #0F0F0F;
-      --surface-2: #161616;
-      --surface-3: #1C1C1C;
-      --accent: #88FF22;
-      --accent-dim: rgba(136, 255, 34, 0.08);
-      --text-primary: #FFF;
-      --text-secondary: #A0B890;
-      --text-muted: #555;
-      --border-color: rgba(255, 255, 255, 0.07);
-      --nav-bg: rgba(0, 0, 0, 0.96);
-      --featured-bg: #111111;
-      --featured-border: rgba(255, 255, 255, 0.1)
-    }
-
-    [data-theme="leaderboard"] {
-      --screen-bg: #000;
-      --surface: #0F0F0F;
-      --surface-2: #161616;
-      --surface-3: #1C1C1C;
-      --accent: #FFB347;
-      --accent-dim: rgba(255, 179, 71, 0.08);
-      --text-primary: #FFF;
-      --text-secondary: #C8A870;
-      --text-muted: #555;
-      --border-color: rgba(255, 255, 255, 0.07);
-      --nav-bg: rgba(0, 0, 0, 0.96);
-      --featured-bg: #111111;
-      --featured-border: rgba(255, 255, 255, 0.1)
-    }
-
-    [data-theme="profile"] {
-      --screen-bg: #000;
-      --surface: #0F0F0F;
-      --surface-2: #161616;
-      --surface-3: #1C1C1C;
-      --accent: #C87EFF;
-      --accent-dim: rgba(200, 126, 255, 0.08);
-      --text-primary: #FFF;
-      --text-secondary: #B090D0;
-      --text-muted: #555;
-      --border-color: rgba(255, 255, 255, 0.07);
-      --nav-bg: rgba(0, 0, 0, 0.96);
-      --featured-bg: #111111;
-      --featured-border: rgba(255, 255, 255, 0.1)
-    }
-
-    #phone {
+    #phone-frame {
       width: 390px;
       height: 844px;
       border-radius: 44px;
@@ -122,8 +58,12 @@
       position: relative;
       box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
       background: var(--screen-bg);
+      display: flex;
+      flex-direction: column;
       transition: background-color .3s ease
     }
+
+    .hidden { display: none !important }
 
     .status-bar {
       height: 44px;
@@ -165,8 +105,8 @@
       fill: currentColor
     }
 
-    #screen-area {
-      height: calc(844px - 44px - 68px);
+    #app-root {
+      flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
       scroll-behavior: smooth;
@@ -175,20 +115,18 @@
       position: relative
     }
 
-    #screen-area::-webkit-scrollbar {
+    #app-root::-webkit-scrollbar {
       display: none
     }
 
-    .scr {
-      display: none;
-      opacity: 0;
+    .screen {
       padding: 0 16px 24px;
       width: 100%;
-      box-sizing: border-box
+      box-sizing: border-box;
+      min-height: 100%
     }
 
-    .scr.active {
-      display: block;
+    .screen-enter {
       animation: scrIn .18s ease-out forwards
     }
 
@@ -217,12 +155,9 @@
     }
 
     /* Bottom Nav */
-    #bnav {
+    #bottom-nav {
       height: 68px;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      flex-shrink: 0;
       background: var(--nav-bg);
       border-top: 1px solid var(--border-color);
       backdrop-filter: blur(20px);
@@ -251,7 +186,7 @@
       transition: color .2s ease
     }
 
-    .nt.on {
+    .nt.active, .nav-item.active {
       color: var(--accent)
     }
 
@@ -297,7 +232,7 @@
       align-items: center;
       justify-content: center;
       margin-top: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       border: none;
       cursor: pointer;
       flex-shrink: 0;
@@ -370,24 +305,24 @@
     }
 
     .b-open {
-      background: #1E1E1E;
-      color: #888
+      background: #111F15;
+      color: #4D7A58
     }
 
     .b-ip {
-      background: #0D1B2E;
+      background: #0F1E2E;
       color: #4D8EFF
     }
 
     .b-pend {
-      background: #1E1600;
-      color: #FFB347;
+      background: #1E1A00;
+      color: #B4FF00;
       animation: pulse 2s infinite
     }
 
     .b-ok {
-      background: var(--accent-dim);
-      color: var(--accent)
+      background: rgba(180, 255, 0, 0.08);
+      color: #B4FF00
     }
 
     .b-rej {
@@ -1686,7 +1621,7 @@
 </head>
 
 <body>
-  <div id="phone" data-theme="home">
+  <div id="phone-frame" data-theme="home">
     <div class="status-bar">
       <span class="sb-time">9:41</span>
       <div class="sb-pill"></div>
@@ -1710,29 +1645,21 @@
         </svg>
       </div>
     </div>
-    <div id="screen-area">
-      <div id="s-auth" class="scr"></div>
-      <div id="s-home" class="scr"></div>
-      <div id="s-missions" class="scr"></div>
-      <div id="s-report" class="scr"></div>
-      <div id="s-detail" class="scr"></div>
-      <div id="s-leaderboard" class="scr"></div>
-      <div id="s-profile" class="scr"></div>
-    </div>
-    <nav id="bnav" style="display:none">
-      <button class="nt" data-tab="home" onclick="go('home')"><svg viewBox="0 0 24 24">
+    <div id="app-root"></div>
+    <nav id="bottom-nav" class="hidden">
+      <button class="nav-item nt" id="nav-home" onclick="navigate('home')"><svg viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           <polyline points="9,22 9,12 15,12 15,22" />
         </svg><span class="nt-l">Home</span></button>
-      <button class="nt" data-tab="missions" onclick="go('missions')"><svg viewBox="0 0 24 24">
+      <button class="nav-item nt" id="nav-missions" onclick="navigate('missions')"><svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12,6 12,12 16,14" />
         </svg><span class="nt-l">Missions</span></button>
-      <button class="fab" data-tab="report" onclick="go('report')"><span class="fab-plus">+</span></button>
-      <button class="nt" data-tab="leaderboard" onclick="go('leaderboard')"><svg viewBox="0 0 24 24">
+      <button class="nav-item fab" id="nav-report" onclick="navigate('report')"><span class="fab-plus">+</span></button>
+      <button class="nav-item nt" id="nav-leaderboard" onclick="navigate('leaderboard')"><svg viewBox="0 0 24 24">
           <path d="M18 20V10M12 20V4M6 20v-6" />
         </svg><span class="nt-l">Ranks</span></button>
-      <button class="nt" data-tab="profile" onclick="go('profile')"><svg viewBox="0 0 24 24">
+      <button class="nav-item nt" id="nav-profile" onclick="navigate('profile')"><svg viewBox="0 0 24 24">
           <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg><span class="nt-l">Profile</span></button>

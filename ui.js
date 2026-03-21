@@ -127,7 +127,7 @@ function dashHeader(opts = {}) {
       ${opts.badge ? opts.badge : ''}
     </div>`;
   }
-  const av = `<div class="dash-avatar" style="background:${acColor(u.username||'U')}">${initials(u.username||'US')}</div>`;
+  const av = `<div class="dash-avatar" style="background:${acColor(u.username || 'U')}">${initials(u.username || 'US')}</div>`;
   return `<div class="dash-header">
     <div class="dash-header-left">
       ${av}
@@ -301,10 +301,10 @@ function homeHTML() {
     ${dashHeader()}
     ${searchBar()}
     <div class="stat-grid" id="stat-grid">
-      ${statCard(IC.pin,       'Reports',        'sc-reports',  true)}
-      ${statCard(IC.checkCircle,'Missions Done',  'sc-missions', false)}
-      ${statCard(IC.users,     'Active Cleaners','sc-cleaners', false)}
-      ${statCard(IC.star,      'Your Rank',      'sc-rank',     false)}
+      ${statCard(IC.pin, 'Reports', 'sc-reports', true)}
+      ${statCard(IC.checkCircle, 'Missions Done', 'sc-missions', false)}
+      ${statCard(IC.users, 'Active Cleaners', 'sc-cleaners', false)}
+      ${statCard(IC.star, 'Your Rank', 'sc-rank', false)}
     </div>
     <div id="status-strip-wrap"></div>
     <div class="section-header">
@@ -327,18 +327,18 @@ function initHome() {
   // Load missions to populate remaining stats
   Missions.getAll().then(ms => {
     const openCount = ms.filter(m => m.status === 'open').length;
-    const ipCount   = ms.filter(m => m.status === 'in-progress').length;
+    const ipCount = ms.filter(m => m.status === 'in-progress').length;
     const doneCount = ms.filter(m => m.status === 'approved').length;
-    const cleaners  = new Set(ms.filter(m => m.acceptedBy).map(m => m.acceptedBy)).size;
+    const cleaners = new Set(ms.filter(m => m.acceptedBy).map(m => m.acceptedBy)).size;
 
     el('sc-cleaners').textContent = cleaners || S.users.length;
 
     const stripWrap = document.getElementById('status-strip-wrap');
     if (stripWrap) {
       stripWrap.innerHTML = statusStrip([
-        { color: '#22FF88', label: 'Open',        value: openCount },
-        { color: '#4D8EFF', label: 'In Progress', value: ipCount   },
-        { color: '#FF8C42', label: 'Completed',   value: doneCount },
+        { color: '#22FF88', label: 'Open', value: openCount },
+        { color: '#4D8EFF', label: 'In Progress', value: ipCount },
+        { color: '#FF8C42', label: 'Completed', value: doneCount },
       ]);
     }
 
@@ -571,7 +571,7 @@ function renderDetail(m) {
   const isMine = S.user && m.report?.createdBy === S.user.id;
   const isOpen = m.status === 'open';
   const canProof = m.status === 'in-progress' && isMe;
-  const miniAv = `<div class="info-mini-av" style="background:${acColor(m.creator?.username||'U')}">${initials(m.creator?.username||'US')}</div>`;
+  const miniAv = `<div class="info-mini-av" style="background:${acColor(m.creator?.username || 'U')}">${initials(m.creator?.username || 'US')}</div>`;
   let actionHTML = '';
   if (isOpen && !isMine) { actionHTML = `<div class="pts-reward-row">${IC.trphy} +150 pts on completion</div><button class="btn btn-g" id="accept-btn" onclick="acceptMission('${m.id}')">${IC.ok} Accept Mission</button>`; }
   else if (isOpen && isMine) { actionHTML = `<div style="text-align:center;font-size:13px;color:var(--t2);padding:12px 0">Waiting for a volunteer to accept this mission.</div>`; }
@@ -722,7 +722,7 @@ function profileHTML() {
   return `
     ${dashHeader()}
     <div class="prof-hd">
-      <div class="dash-avatar" style="background:${acColor(u.username||'U')};width:72px;height:72px;font-size:24px">${initials(u.username||'US')}</div>
+      <div class="dash-avatar" style="background:${acColor(u.username || 'U')};width:72px;height:72px;font-size:24px">${initials(u.username || 'US')}</div>
       <div class="prof-name">${u.username || 'User'}</div>
       <div class="prof-handle">@${(u.username || 'user').toLowerCase().replace(/\s+/g, '_')}</div>
     </div>
@@ -775,7 +775,7 @@ function filterProfTab(btn, filter) {
   if (!ms.length) {
     wrap.innerHTML = `<div class="empty">${IC.ok}<div class="empty-t">No missions here</div></div>`;
   } else {
-    wrap.innerHTML = ms.slice(0,8).map(missionRowHTML).join('');
+    wrap.innerHTML = ms.slice(0, 8).map(missionRowHTML).join('');
   }
 }
 
