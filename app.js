@@ -282,70 +282,197 @@ function filt(el, f) {
 /* ═══════════════════════════════════════════
    REPORT SCREEN
 ═══════════════════════════════════════════ */
+/* ── Report screen state ── */
+const _ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const _MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 let _rImg = null, _rImgFile = null, _rLat = null, _rLng = null;
+
 function renderReport() {
-  const s = document.getElementById('s-report'); _rImg = null; _rImgFile = null;
+  const s = document.getElementById('s-report');
+  _rImg = null; _rImgFile = null; _rLat = null; _rLng = null;
   s.innerHTML = `<div class="scr-hd"><button class="back-btn" onclick="go('home')">${I.back}</button><span class="scr-hd-t">New Report</span></div>
 <div id="rpt-ct" style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
-<div class="rpt-card"><div class="rpt-lbl">Photo</div><div class="uzone" id="uz"><input type="file" accept="image/jpeg,image/png,image/webp" onchange="hImg(this)"/>${I.cam}<span>Tap to add photo</span></div><div class="ferr" id="ie"></div></div>
-<div class="rpt-card"><div class="rpt-lbl">Location</div><input class="rpt-in" id="f-loc" placeholder="Enter address…"/><div class="ferr" id="le"></div><button class="btn-s" style="margin-top:8px" onclick="getLoc()">📍 Use My Location</button></div>
-<div class="rpt-card"><div class="rpt-lbl">Description <span style="font-weight:400;text-transform:none;color:var(--text-muted)">(optional)</span></div><textarea class="rpt-ta" id="f-desc" placeholder="Describe the garbage…" maxlength="120" oninput="cc()"></textarea><div class="char-c" id="dcc">0/120</div></div>
+<div class="rpt-card">
+  <div class="rpt-lbl">Photo</div>
+  <div class="uzone" id="uz" onclick="document.getElementById('report-image-input').click()">${I.cam}<span>Tap to add photo</span></div>
+  <input type="file" id="report-image-input" accept="image/jpeg,image/png,image/webp" style="display:none" aria-hidden="true"/>
+  <div class="ferr" id="ie"></div>
+</div>
+<div class="rpt-card">
+  <div class="rpt-lbl">Location</div>
+  <input class="rpt-in" id="f-loc" placeholder="Enter address…" oninput="chkR()"/>
+  <div class="ferr" id="le"></div>
+  <button class="btn-s" id="loc-btn" style="margin-top:8px" onclick="getLoc()">📍 Use My Location</button>
+</div>
+<div class="rpt-card">
+  <div class="rpt-lbl">Description <span style="font-weight:400;text-transform:none;color:var(--text-muted)">(optional)</span></div>
+  <textarea class="rpt-ta" id="f-desc" placeholder="Describe the garbage…" maxlength="120" oninput="cc()"></textarea>
+  <div class="char-c" id="dcc">0/120</div>
+</div>
+<div id="prog-wrap" style="display:none;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">
+  <div id="prog-bar" style="height:100%;width:0%;background:var(--accent);transition:width 100ms ease;border-radius:2px"></div>
+</div>
 <button class="btn-p" id="rbtn" onclick="subRpt()" disabled>Submit Report</button>
 </div>`;
   s.style.display = 'block'; s.classList.add('active');
+  // Wire hidden file input
+  document.getElementById('report-image-input').addEventListener('change', _onImgChange);
 }
 
-function cc() { const d = document.getElementById('f-desc'), c = document.getElementById('dcc'); if (d && c) c.textContent = d.value.length + '/120' }
+function cc() {
+  const d = document.getElementById('f-desc'), c = document.getElementById('dcc');
+  if (d && c) c.textContent = d.value.length + '/120';
+}
 
-function hImg(inp) {
-  const f = inp.files[0]; if (!f) return;
-  const err = document.getElementById('ie');
-  if (f.size > 10 * 1024 * 1024) { err.textContent = 'Max 10MB'; _rImgFile = null; _rImg = null; return }
-  err.textContent = '';
-  _rImgFile = f; // store actual File for upload
+function _validateFile(f) {
+  if (!f) return 'No file selected.';
+  if (!_ALLOWED_TYPES.includes(f.type.toLowerCase())) return 'Only JPG, PNG, or WebP images are allowed.';
+  if (f.size > _MAX_FILE_SIZE) return `Image must be under 10MB. Your file is ${(f.size / 1024 / 1024).toFixed(1)}MB.`;
+  return null;
+}
+
+function _onImgChange(e) {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const errEl = document.getElementById('ie');
+  const valErr = _validateFile(f);
+  if (valErr) {
+    if (errEl) errEl.textContent = valErr;
+    e.target.value = '';
+    return;
+  }
+  if (errEl) errEl.textContent = '';
+  _rImgFile = f;
   const r = new FileReader();
-  r.onload = e => {
-    _rImg = e.target.result;
-    document.getElementById('uz').innerHTML = `<input type="file" accept="image/jpeg,image/png,image/webp" onchange="hImg(this)"/><img src="${_rImg}"/>`;
+  r.onload = ev => {
+    _rImg = ev.target.result;
+    const uz = document.getElementById('uz');
+    if (uz) uz.innerHTML = `<img src="${_rImg}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"/><span style="position:relative;z-index:2;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px">Tap to change</span>`;
+    // Re-wire click since innerHTML was replaced
+    if (uz) uz.onclick = () => document.getElementById('report-image-input').click();
     chkR();
   };
+  r.onerror = () => {
+    if (errEl) errEl.textContent = 'Could not read the selected file. Please try another.';
+    _rImgFile = null;
+  };
   r.readAsDataURL(f);
+  e.target.value = ''; // allow reselecting same file
 }
+
+// Legacy inline onchange handler kept for backward compat
+function hImg(inp) { /* no-op — wired via event listener now */ }
 
 function getLoc() {
-  const btn = document.querySelector('#s-report .btn-s'); btn.disabled = true; btn.innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.2);border-top-color:#fff"></span> Getting…`;
-  if (!navigator.geolocation) { document.getElementById('le').textContent = 'Not supported'; btn.innerHTML = '📍 Use My Location'; btn.disabled = false; return }
-  navigator.geolocation.getCurrentPosition(p => {
-    const addrs = ['Sector 17 Park, Chandigarh', 'Connaught Place, New Delhi', 'MG Road, Metro exit 2', 'Saket District Centre'];
-    const a = addrs[Math.floor(Math.random() * addrs.length)];
-    document.getElementById('f-loc').value = a;
-    _rLat = p.coords.latitude; _rLng = p.coords.longitude;
-    btn.innerHTML = '📍 Captured ✓'; btn.style.color = 'var(--accent)'; chkR();
-  }, () => { document.getElementById('le').textContent = 'Denied. Enter manually.'; btn.innerHTML = '📍 Use My Location'; btn.disabled = false; }, { timeout: 10000 });
+  const btn = document.getElementById('loc-btn');
+  if (!btn) return;
+  const leEl = document.getElementById('le');
+  if (!navigator.geolocation) {
+    if (leEl) leEl.textContent = 'Geolocation is not supported by your browser.';
+    return;
+  }
+  btn.disabled = true; btn.innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.2);border-top-color:#fff"></span> Getting…`;
+  if (leEl) leEl.textContent = '';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      _rLat = pos.coords.latitude; _rLng = pos.coords.longitude;
+      // Try to match Delhi-area preset, else show coordinates
+      const presets = [
+        { lat: 28.6139, lng: 77.2090, name: 'Central Delhi' },
+        { lat: 28.5355, lng: 77.3910, name: 'Noida Sector 18' },
+        { lat: 28.4595, lng: 77.0266, name: 'Gurugram Sector 29' },
+        { lat: 28.6692, lng: 77.4538, name: 'Ghaziabad Raj Nagar' },
+        { lat: 28.5700, lng: 77.3210, name: 'Faridabad Sector 12' },
+      ];
+      const nearest = presets.find(p => Math.abs(p.lat - _rLat) < 0.15 && Math.abs(p.lng - _rLng) < 0.15);
+      const display = nearest ? nearest.name : `${_rLat.toFixed(4)}°N, ${_rLng.toFixed(4)}°E`;
+      const locInput = document.getElementById('f-loc');
+      if (locInput) locInput.value = display;
+      btn.innerHTML = '📍 Captured ✓'; btn.style.color = 'var(--accent)';
+      chkR();
+    },
+    err => {
+      btn.innerHTML = '📍 Use My Location'; btn.disabled = false;
+      const msgs = { 1: 'Location access denied. Please enter your address manually.', 2: 'Could not detect your location. Please enter manually.', 3: 'Location request timed out. Please enter manually.' };
+      if (leEl) leEl.textContent = msgs[err.code] || 'Could not get location. Please enter manually.';
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+  );
 }
 
-function chkR() { document.getElementById('rbtn').disabled = !(_rImgFile && (document.getElementById('f-loc')?.value || '').trim().length >= 5) }
-document.addEventListener('input', e => { if (e.target.id === 'f-loc') chkR() });
+function chkR() {
+  const hasFile = !!_rImgFile;
+  const hasLoc = (document.getElementById('f-loc')?.value || '').trim().length >= 3;
+  const btn = document.getElementById('rbtn');
+  if (btn) btn.disabled = !(hasFile && hasLoc);
+}
+
+function _simProgress(setFn) {
+  let cur = 0;
+  const iv = setInterval(() => {
+    if (cur < 60) cur += Math.random() * 12 + 4;
+    else if (cur < 85) cur += Math.random() * 4 + 1;
+    else if (cur < 92) cur += Math.random() * 1.5;
+    else { clearInterval(iv); return; }
+    setFn(Math.min(Math.round(cur), 92));
+  }, 120);
+  return iv;
+}
+
+function _setProgress(pct) {
+  const bar = document.getElementById('prog-bar'), wrap = document.getElementById('prog-wrap');
+  if (!bar || !wrap) return;
+  if (pct <= 0) { wrap.style.display = 'none'; bar.style.width = '0%'; return; }
+  wrap.style.display = 'block'; bar.style.width = pct + '%';
+}
+
+function _resetReportForm() {
+  _rImgFile = null; _rImg = null; _rLat = null; _rLng = null;
+  const inp = document.getElementById('report-image-input'); if (inp) inp.value = '';
+}
 
 async function subRpt() {
+  // Validate
+  const loc = (document.getElementById('f-loc')?.value || '').trim();
+  const desc = document.getElementById('f-desc')?.value || '';
+  const ieEl = document.getElementById('ie'), leEl = document.getElementById('le');
+  if (!_rImgFile) { if (ieEl) ieEl.textContent = 'Please add a photo of the garbage.'; return; }
+  if (loc.length < 3) { if (leEl) leEl.textContent = 'Please enter or capture a location.'; return; }
+  // Clear errors
+  if (ieEl) ieEl.textContent = ''; if (leEl) leEl.textContent = '';
+
   const btn = document.getElementById('rbtn');
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Uploading…`;
+  _setProgress(0);
+
+  let progressIv = _simProgress(_setProgress);
   try {
-    const loc = document.getElementById('f-loc').value.trim();
-    const desc = document.getElementById('f-desc')?.value || '';
     await createReport({ imageFile: _rImgFile, description: desc, location: loc, lat: _rLat, lng: _rLng, userId: S.user?.id });
-    // Refresh user profile to get updated points/reports count
-    if (S.user?.id) {
-      const updated = await getProfile(S.user.id);
-      S.user = updated;
-    }
-    _rImgFile = null; _rImg = null;
+    // Complete progress bar
+    clearInterval(progressIv);
+    _setProgress(100);
+    await new Promise(r => setTimeout(r, 300));
+    _setProgress(0);
+
+    // Refresh user profile points
+    if (S.user?.id) { try { const updated = await getProfile(S.user.id); S.user = updated; } catch (_) {} }
+
+    _resetReportForm();
     document.getElementById('rpt-ct').innerHTML = `<div class="suc"><div class="suc-ring">${I.ok}</div><div class="suc-t">Report Submitted!</div><div style="color:var(--accent);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">+50 pts</div><div class="suc-s">Your report is now a mission.</div></div>`;
     setTimeout(() => go('home'), 1800);
   } catch (e) {
+    clearInterval(progressIv);
+    _setProgress(0);
     btn.disabled = false; btn.textContent = 'Submit Report';
-    const le = document.getElementById('le');
-    if (le) le.textContent = e.message || "Couldn't submit your report. Please try again.";
+    const msg = e.message || "Couldn't submit your photo. Check your connection and try again.";
+    // Route error to the right field
+    if (msg.toLowerCase().includes('photo') || msg.toLowerCase().includes('upload') || msg.toLowerCase().includes('image') || msg.toLowerCase().includes('file')) {
+      if (ieEl) ieEl.textContent = msg;
+    } else if (msg.toLowerCase().includes('location')) {
+      if (leEl) leEl.textContent = msg;
+    } else {
+      if (leEl) leEl.textContent = msg; // generic fallback
+    }
   }
 }
 
