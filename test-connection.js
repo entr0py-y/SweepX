@@ -1,5 +1,6 @@
-/* DB connection indicator — read-only, no data writes */
+/* DB connection indicator — desktop only, read-only */
 (async function checkConnection() {
+  if (window.innerWidth <= 768) return; // skip on mobile
   const el = document.createElement('div');
   Object.assign(el.style, {
     position: 'fixed', bottom: '20px', right: '20px',

@@ -124,10 +124,11 @@ body {
 
 /* Auth screen fills the full container */
 .app-shell.auth-mode #s-auth {
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  height: auto;
   padding: 0;
-  overflow: hidden;
-  position: relative
+  overflow: hidden
 }
 
 /* ── Mobile: full-bleed, no frame ── */
