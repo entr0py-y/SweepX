@@ -244,10 +244,11 @@ async function _runVerification(mission, userId) {
 
   if (approved) {
     await _sb.from('missions').update({ status: 'approved', reviewed_at: now }).eq('id', mission.id);
-    await _sb.from('reports').update({ status: 'completed' }).eq('id', mission.report_id).catch(() => {});
-    if (userId) {
-      await _sb.rpc('award_points', { p_user_id: userId, p_amount: mission.points_reward || 150, p_reason: 'mission_completed', p_mission_id: mission.id }).catch(e => console.warn('Points award failed:', e.message));
-    }
+    
+    // As per new basic requirements: set reports to completed and completed_by to the current user's username
+    const currentUsername = window.S?.user?.username || localStorage.getItem('username') || 'Unknown';
+    await _sb.from('reports').update({ status: 'completed', completed_by: currentUsername }).eq('id', mission.report_id).catch(() => {});
+
   } else {
     const reason = _REJECTION_REASONS[Math.floor(Math.random() * _REJECTION_REASONS.length)];
     await _sb.from('missions').update({ status: 'rejected', rejection_reason: reason, reviewed_at: now }).eq('id', mission.id);
@@ -256,12 +257,28 @@ async function _runVerification(mission, userId) {
 
 /* ─── Leaderboard ─── */
 async function getLeaderboard() {
-  const { data, error } = await _sb.from('profiles')
-    .select('id, username, display_name, points, level, missions_completed, streak')
-    .order('points', { ascending: false })
-    .limit(20);
+  // Fetch all reports where status="completed"
+  const { data, error } = await _sb.from('reports')
+    .select('completed_by')
+    .eq('status', 'completed');
+    
   if (error) throw new Error('Leaderboard unavailable.');
-  return data || [];
+  
+  // Group by completed_by and calculate 10 points per mission
+  const userScores = {};
+  for (const row of (data || [])) {
+    if (row.completed_by) {
+      userScores[row.completed_by] = (userScores[row.completed_by] || 0) + 10;
+    }
+  }
+  
+  // Convert to array and sort descending
+  const lb = Object.entries(userScores).map(([username, points]) => ({
+    username,
+    points
+  })).sort((a, b) => b.points - a.points);
+  
+  return lb;
 }
 
 /* ─── Realtime subscriptions ─── */
@@ -286,7 +303,7 @@ function subscribeMission(missionId, onChange) {
 
 function subscribeLeaderboard(onChange) {
   const ch = _sb.channel('leaderboard-live')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, onChange)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, onChange)
     .subscribe();
   _channels['leaderboard-live'] = ch;
   return ch;

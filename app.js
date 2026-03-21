@@ -665,17 +665,24 @@ async function _loadLB() {
 }
 
 function _renderLBData(users) {
+  if (!users || users.length === 0) {
+    const pods = document.getElementById('lb-pods');
+    if (pods) pods.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px;font-size:14px">No rankings yet</div>`;
+    const lbRest = document.getElementById('lb-rest');
+    if (lbRest) lbRest.innerHTML = '';
+    return;
+  }
   const t3 = users.slice(0, 3), rest = users.slice(3);
   const rc = ['r2', 'r1', 'r3'], order = [1, 0, 2];
   const pods = document.getElementById('lb-pods');
   if (pods) pods.innerHTML = order.map(idx => {
     const u = t3[idx]; if (!u) return '';
-    const me = S.user && u.id === S.user.id;
+    const me = S.user && u.username === S.user.username;
     return `<div class="pod-c ${rc[idx]}${me ? ' me' : ''}"><div class="pod-rk">${idx + 1}</div><div class="avatar pod-av" style="background:${acCol()}">${ini(u.username)}</div><div class="pod-nm">${u.username}</div><div class="pod-pt">${u.points} pts</div></div>`;
   }).join('');
   const lbRest = document.getElementById('lb-rest');
   if (lbRest) lbRest.innerHTML = rest.map((u, i) => {
-    const me = S.user && u.id === S.user.id;
+    const me = S.user && u.username === S.user.username;
     return `<div class="lb-row${me ? ' me' : ''}" style="animation:slideUp .22s ease-out both;animation-delay:${i * 40}ms"><span class="lb-rk">${i + 4}</span><div class="avatar" style="width:32px;height:32px;font-size:11px;background:${acCol()}">${ini(u.username)}</div><span class="lb-nm">${u.username}${me ? '<span class="you-tag">You</span>' : ''}</span><span class="lb-pt">${u.points}</span></div>`;
   }).join('');
 }
