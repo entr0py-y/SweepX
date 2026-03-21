@@ -57,6 +57,99 @@ function badge(st) {
   return `<span class="badge ${m[st] || 'b-open'}">${l[st] || st}</span>`;
 }
 
+/* ─── Camera Capture & Anti-Cheat ─── */
+class CameraCapture {
+  constructor() {
+    this.stream = null; this.facingMode = 'environment'; this.onCapture = null;
+    this.modal = document.getElementById('camera-modal'); this.video = document.getElementById('camera-preview');
+    this.canvas = document.getElementById('camera-canvas'); this.shutterBtn = document.getElementById('camera-shutter');
+    this.cancelBtn = document.getElementById('camera-cancel'); this.flipBtn = document.getElementById('camera-flip');
+
+    if (this.shutterBtn) {
+      this.shutterBtn.addEventListener('click', () => this.capture());
+      this.cancelBtn.addEventListener('click', () => this.close());
+      this.flipBtn.addEventListener('click', () => this.flipCamera());
+      this.shutterBtn.addEventListener('mousedown', () => this.shutterBtn.style.transform = 'scale(0.92)');
+      this.shutterBtn.addEventListener('mouseup', () => this.shutterBtn.style.transform = 'scale(1)');
+      this.shutterBtn.addEventListener('touchstart', () => this.shutterBtn.style.transform = 'scale(0.92)');
+      this.shutterBtn.addEventListener('touchend', () => this.shutterBtn.style.transform = 'scale(1)');
+    }
+  }
+
+  isMobile() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+
+  async open(onCapture, inputId = 'report-image-input', errorElId = 'ie') {
+    this.onCapture = onCapture;
+    const errEl = document.getElementById(errorElId);
+    const showError = msg => { if (errEl) errEl.textContent = msg; else alert(msg); };
+
+    if (this.isMobile()) {
+      const input = document.getElementById(inputId);
+      input.onchange = async (e) => {
+        const file = e.target.files?.[0]; if (!file) return;
+        if (file.size < 50 * 1024) { showError('Photo quality is too low. Please retake the photo.'); input.value = ''; return; }
+        const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
+        if (file.lastModified < fiveMinsAgo) { showError('Please take a new live photo. Old photos are not accepted.'); input.value = ''; return; }
+        try { const dataUrl = await this.fileToDataUrl(file); onCapture(file, dataUrl); } catch (err) { showError('Could not process photo'); }
+        input.value = '';
+      };
+      input.click();
+      return;
+    }
+
+    try { await this.startStream(); this.modal.style.display = 'flex'; }
+    catch (err) { this.handlePermissionError(err, showError); }
+  }
+
+  async startStream() {
+    if (this.stream) this.stopStream();
+    const constraints = { video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 4/3 } }, audio: false };
+    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (this.video) { this.video.srcObject = this.stream; await this.video.play(); }
+  }
+
+  stopStream() {
+    if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+    if (this.video) this.video.srcObject = null;
+  }
+
+  async flipCamera() {
+    this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+    try { await this.startStream(); } catch { this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment'; }
+  }
+
+  capture() {
+    if (!this.stream) return;
+    const { videoWidth: w, videoHeight: h } = this.video;
+    this.canvas.width = w; this.canvas.height = h;
+    const ctx = this.canvas.getContext('2d');
+    if (this.facingMode === 'user') { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(this.video, 0, 0, w, h);
+
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:0.8;pointer-events:none;z-index:10;transition:opacity 200ms ease';
+    if (this.modal) this.modal.querySelector('div').appendChild(flash);
+    setTimeout(() => { flash.style.opacity = '0'; }, 50); setTimeout(() => flash.remove(), 300);
+
+    this.canvas.toBlob((blob) => {
+      const dataUrl = this.canvas.toDataURL('image/jpeg', 0.85);
+      this.close(); this.onCapture(blob, dataUrl);
+    }, 'image/jpeg', 0.85);
+  }
+
+  close() { this.stopStream(); if (this.modal) this.modal.style.display = 'none'; }
+
+  handlePermissionError(err, showError) {
+    const msgs = { NotAllowedError: 'Camera access denied. Please allow it in settings.', NotFoundError: 'No camera found.', NotReadableError: 'Camera is in use by another app.', OverconstrainedError: 'Camera does not meet requirements.' };
+    showError(msgs[err.name] || 'Could not access camera. Please try again.');
+  }
+
+  fileToDataUrl(file) {
+    return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => resolve(e.target.result); reader.onerror = () => reject(new Error('Could not read file')); reader.readAsDataURL(file); });
+  }
+}
+const camera = new CameraCapture();
+
 /* ─── Skeletons ─── */
 function skelRow() { return `<div class="mr" style="pointer-events:none"><div class="mr-th" style="background:rgba(255,255,255,.06);border-radius:8px"></div><div class="mr-bd"><div style="height:11px;width:65%;background:rgba(255,255,255,.06);border-radius:4px;margin-bottom:6px"></div><div style="height:9px;width:40%;background:rgba(255,255,255,.04);border-radius:4px"></div></div></div>`; }
 function skelStat() { return `<div class="sc ft" style="pointer-events:none"><div style="height:36px;background:rgba(255,255,255,.06);border-radius:8px;margin:8px"></div></div>`; }
@@ -419,8 +512,8 @@ function renderReport() {
 <div id="rpt-ct" style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
 <div class="rpt-card">
   <div class="rpt-lbl">Photo</div>
-  <div class="uzone" id="uz" onclick="document.getElementById('report-image-input').click()">${I.cam}<span>Tap to add photo</span></div>
-  <input type="file" id="report-image-input" accept="image/jpeg,image/png,image/webp" style="display:none" aria-hidden="true"/>
+  <div class="uzone" id="uz" onclick="camera.open((blob, url) => _handleReportCamera(blob, url), 'report-image-input', 'ie')">${I.cam}<span>Tap to capture garbage</span></div>
+  <input type="file" id="report-image-input" accept="image/jpeg,image/png,image/webp" capture="environment" style="display:none" aria-hidden="true"/>
   <div class="ferr" id="ie"></div>
 </div>
 <div class="rpt-card">
@@ -440,8 +533,25 @@ function renderReport() {
 <button class="btn-p" id="rbtn" onclick="subRpt()" disabled>Submit Report</button>
 </div>`;
   s.style.display = 'block'; s.classList.add('active');
-  // Wire hidden file input
-  document.getElementById('report-image-input').addEventListener('change', _onImgChange);
+}
+
+function _handleReportCamera(blob, dataUrl) {
+  const errEl = document.getElementById('ie');
+  if (errEl) errEl.textContent = '';
+  _rImgFile = blob;
+  _rImg = dataUrl;
+  const uz = document.getElementById('uz');
+  if (uz) {
+    uz.innerHTML = `<img src="${_rImg}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"/><span style="position:relative;z-index:2;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px">Tap to change</span>`;
+    // Re-wire click
+    uz.onclick = () => camera.open((b, url) => _handleReportCamera(b, url), 'report-image-input', 'ie');
+  }
+
+  // Reset any previous analysis state
+  const rbtn = document.getElementById('rbtn');
+  if (rbtn) { rbtn.textContent = 'Submit Report'; rbtn.disabled = false; }
+
+  chkR();
 }
 
 function cc() {
@@ -456,6 +566,7 @@ function _validateFile(f) {
   return null;
 }
 
+// _onImgChange is no longer used directly by the UI, but kept for reference or other potential uses.
 function _onImgChange(e) {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -567,12 +678,41 @@ async function subRpt() {
   if (ieEl) ieEl.textContent = ''; if (leEl) leEl.textContent = '';
 
   const btn = document.getElementById('rbtn');
-  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Uploading…`;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Analyzing…`;
   _setProgress(0);
 
-  let progressIv = _simProgress(_setProgress);
+  let progressIv;
   try {
-    await createReport({ imageFile: _rImgFile, description: desc, location: loc, lat: _rLat, lng: _rLng, userId: S.user?.id });
+    // ── Pre-Validation ──
+    const validation = await validateBeforeImage(_rImgFile);
+    if (!validation.skipped && !validation.passed) {
+      btn.disabled = false; btn.textContent = 'Submit Report';
+      if (ieEl) ieEl.textContent = validation.reason || 'No garbage detected in this photo. Please capture a location with visible garbage.';
+      
+      const uz = document.getElementById('uz');
+      if (uz) {
+        uz.innerHTML = `<img src="${_rImg}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0.5"/><span style="position:relative;z-index:2;font-size:12px;color:#FF4D4D;font-weight:600;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:6px;border:1px solid rgba(255,77,77,0.3)">${I.xx} Garbage not detected</span>`;
+        uz.onclick = () => camera.open((b, url) => _handleReportCamera(b, url), 'report-image-input', 'ie');
+      }
+
+      if (validation.garbage_type === null && validation.confidence >= 0.60) {
+        if (typeof showToast !== 'undefined') showToast({ type: 'error', title: 'Invalid photo', subtitle: 'This photo does not appear to show a garbage location.' });
+        else alert('This photo does not appear to show a garbage location.');
+      }
+      return;
+    }
+
+    // ── Upload & DB Insert ──
+    btn.innerHTML = `<span class="spin"></span> Uploading…`;
+    progressIv = _simProgress(_setProgress);
+
+    await createReport({ 
+      imageFile: _rImgFile, description: desc, location: loc, lat: _rLat, lng: _rLng, userId: S.user?.id,
+      preValidationStatus: validation.skipped ? 'skipped' : 'passed',
+      preValidationConfidence: validation.confidence || null,
+      preValidationReason: validation.reason || null
+    });
+
     // Complete progress bar
     clearInterval(progressIv);
     _setProgress(100);
@@ -586,7 +726,7 @@ async function subRpt() {
     document.getElementById('rpt-ct').innerHTML = `<div class="suc"><div class="suc-ring">${I.ok}</div><div class="suc-t">Report Submitted!</div><div style="color:var(--accent);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">+50 pts</div><div class="suc-s">Your report is now a mission.</div></div>`;
     setTimeout(() => go('home'), 1800);
   } catch (e) {
-    clearInterval(progressIv);
+    if (progressIv) clearInterval(progressIv);
     _setProgress(0);
     btn.disabled = false; btn.textContent = 'Submit Report';
     const msg = e.message || "Couldn't submit your photo. Check your connection and try again.";
@@ -673,8 +813,8 @@ ${rejectionHtml}
 function proofHTML(mId) {
   return `<div style="display:flex;flex-direction:column;gap:12px">
   <div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px">${I.trphy} +150 pts reward</div>
-  <div class="uzone" id="pz" onclick="document.getElementById('proof-image-input').click()">${I.up}<span>Upload proof photo</span></div>
-  <input type="file" id="proof-image-input" accept="image/jpeg,image/png,image/webp" style="display:none" aria-hidden="true"/>
+  <div class="uzone" id="pz" onclick="camera.open((blob, dataUrl) => _handleProofCamera(blob, dataUrl), 'proof-image-input', 'pe')">${I.up}<span>Capture proof photo</span></div>
+  <input type="file" id="proof-image-input" accept="image/jpeg,image/png,image/webp" capture="environment" style="display:none" aria-hidden="true"/>
   <div class="ferr" id="pe"></div>
   <div id="pprog-wrap" style="display:none;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">
     <div id="pprog-bar" style="height:100%;width:0%;background:var(--accent);transition:width 100ms ease;border-radius:2px"></div>
@@ -684,26 +824,28 @@ function proofHTML(mId) {
 }
 
 function _wirePrfInput(mId) {
-  const inp = document.getElementById('proof-image-input');
-  if (!inp) return;
-  inp.addEventListener('change', e => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const peEl = document.getElementById('pe');
-    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!ALLOWED.includes(f.type.toLowerCase())) { if (peEl) peEl.textContent = 'Only JPG, PNG, or WebP images are allowed.'; e.target.value = ''; return; }
-    if (f.size > 10 * 1024 * 1024) { if (peEl) peEl.textContent = `Image must be under 10MB. Your file is ${(f.size / 1024 / 1024).toFixed(1)}MB.`; e.target.value = ''; return; }
-    if (peEl) peEl.textContent = '';
-    _pImgFile = f;
-    const r = new FileReader();
-    r.onload = ev => {
-      const pz = document.getElementById('pz');
-      if (pz) { pz.innerHTML = `<img src="${ev.target.result}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"/><span style="position:relative;z-index:2;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px">Tap to change</span>`; pz.onclick = () => document.getElementById('proof-image-input').click(); }
-      const pbtn = document.getElementById('pbtn'); if (pbtn) pbtn.disabled = false;
-    };
-    r.onerror = () => { if (peEl) peEl.textContent = 'Could not read the file. Please try another photo.'; _pImgFile = null; };
-    r.readAsDataURL(f);
-    e.target.value = '';
-  });
+  // Real logic now handled directly by CameraCapture and _handleProofCamera
+}
+
+function _handleProofCamera(blob, dataUrl) {
+  const peEl = document.getElementById('pe');
+  if (peEl) peEl.textContent = '';
+  
+  // Anti-cheat: Identical Before/After Check
+  const reportImageDataUrl = document.getElementById('det-hero-img')?.src;
+  if (reportImageDataUrl && reportImageDataUrl === dataUrl) {
+    if (peEl) peEl.textContent = 'The proof photo appears identical to the report photo. Please take a new photo.';
+    return;
+  }
+  
+  _pImgFile = blob;
+  const pz = document.getElementById('pz');
+  if (pz) {
+    pz.innerHTML = `<img src="${dataUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"/><span style="position:relative;z-index:2;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px">Tap to change</span>`;
+    pz.onclick = () => camera.open((b, url) => _handleProofCamera(b, url), 'proof-image-input', 'pe');
+  }
+  const pbtn = document.getElementById('pbtn');
+  if (pbtn) pbtn.disabled = false;
 }
 
 // Legacy inline handler kept for compat

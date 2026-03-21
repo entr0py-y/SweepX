@@ -66,6 +66,39 @@
     </div>
   </div>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Camera Modal (hidden by default) -->
+  <div id="camera-modal" style="display:none; position:absolute; inset:0; background:#000; z-index:200; flex-direction:column;">
+    <div style="position:relative; flex:1; overflow:hidden;">
+      <video id="camera-preview" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+
+      <!-- Viewfinder overlay -->
+      <div style="position:absolute; inset:0; pointer-events:none;">
+        <div style="position:absolute; top:20%; left:10%; width:80%; height:60%; border:2px solid rgba(180,255,0,0.5); border-radius:12px;"></div>
+      </div>
+
+      <!-- Instruction text -->
+      <div style="position:absolute; bottom:100px; left:0; right:0; text-align:center; color:rgba(255,255,255,0.7); font-size:13px; padding:0 24px;">
+        Point camera at the garbage location
+      </div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div style="height:120px; display:flex; align-items:center; justify-content:space-between; padding:0 40px; background:#000;">
+      <button id="camera-cancel" style="width:44px; height:44px; background:none; border:none; color:#fff; font-size:14px; cursor:pointer;">Cancel</button>
+      <button id="camera-shutter" style="width:72px; height:72px; border-radius:50%; background:#fff; border:4px solid rgba(255,255,255,0.3); cursor:pointer; transition:transform 80ms ease;"></button>
+      <button id="camera-flip" style="width:44px; height:44px; background:none; border:none; color:#fff; cursor:pointer;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Hidden canvas for frame capture -->
+    <canvas id="camera-canvas" style="display:none;"></canvas>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="config.js"></script>

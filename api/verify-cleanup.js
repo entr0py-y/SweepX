@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
   }
 
   const startTime = Date.now();
-  const { mission_id, before_image_url, after_image_url } = req.body || {};
+  const { mission_id, before_image_url, after_image_url, client_duplicate_check } = req.body || {};
 
   // ── Input validation ──────────────────────────────────
   if (!mission_id || !before_image_url || !after_image_url) {
@@ -93,6 +93,26 @@ module.exports = async function handler(req, res) {
     verification_status: 'pending',
     verification_attempted_at: new Date().toISOString()
   }).eq('id', mission_id);
+
+  // ── Client-side identical image rejection ────────────
+  if (client_duplicate_check === true) {
+    await _applyVerdict(supabase, {
+      mission, verdict: 'rejected',
+      reason: 'Identical before and after images detected by client.',
+      confidence: 1.0, details: null,
+      modelUsed: 'client', tokensUsed: 0,
+      latencyMs: Date.now() - startTime, rawText: null, error: null,
+      beforeUrl: validBefore, afterUrl: validAfter
+    });
+    return res.status(200).json({
+      verdict: 'rejected',
+      confidence: 1.0,
+      reason: 'Identical before and after images detected.',
+      points_awarded: 0,
+      model_used: 'client',
+      latency_ms: Date.now() - startTime
+    });
+  }
 
   // ── Fetch images as base64 ────────────────────────────
   let beforeImg, afterImg;
