@@ -75,12 +75,14 @@ async function createReport({ imageUrl, description, location, lat, lng, userId 
       location: location.trim(),
       lat: lat || null,
       lng: lng || null,
-      status: 'open',
-      capture_method: 'camera'
+      status: 'open'
     })
     .select('id, image_url, location, description, created_at, user_id')
     .single();
-  if (error) throw new Error("Couldn't submit your report. Please try again.");
+  if (error) {
+    console.error("Supabase insert error:", error);
+    throw new Error("Couldn't submit your report. Please try again.");
+  }
 
   // 3. Award 50 pts for reporting + increment reports_submitted counter
   if (userId) {
