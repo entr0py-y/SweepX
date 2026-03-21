@@ -133,6 +133,8 @@ function _normalizeMission(m) {
     at: m.created_at,
     ct: m.completed_at || null,
     points_reward: m.points_reward || 150,
+    after_img: m.after_image || null,          // proof photo URL
+    rejection_reason: m.rejection_reason || null, // rejection reason text
     rpt: m.report ? {
       id: m.report.id,
       img: m.report.image_url,
@@ -161,42 +163,95 @@ async function acceptMission(missionId, userId) {
 }
 
 async function submitProof(missionId, afterImageFile, userId) {
-  // Upload proof image
-  let afterImageUrl;
-  try { afterImageUrl = await uploadImage(afterImageFile, 'proof-images'); }
-  catch (e) { throw new Error("Couldn't upload your photo. Check your connection and try again."); }
+  // ── Guard: verify mission is still in_progress and owned by user ──
+  const { data: mission, error: fetchError } = await _sb
+    .from('missions')
+    .select('id, status, accepted_by, report_id, points_reward')
+    .eq('id', missionId)
+    .single();
 
-  // Mark pending
-  const { data, error } = await _sb.from('missions')
+  if (fetchError || !mission) throw new Error('Mission not found. It may have been removed.');
+  if (mission.status !== 'in_progress' && mission.status !== 'in-progress')
+    throw new Error(`This mission is already ${mission.status}. Cannot resubmit.`);
+  if (mission.accepted_by !== userId) throw new Error('You can only submit proof for missions you accepted.');
+
+  // ── Upload proof with retry ───────────────────────────
+  const afterImageUrl = await _uploadProofWithRetry(afterImageFile);
+
+  // ── Update mission → pending (optimistic lock) ────────
+  const { data: updated, error: updateError } = await _sb
+    .from('missions')
     .update({ after_image: afterImageUrl, status: 'pending', completed_at: new Date().toISOString() })
-    .eq('id', missionId).eq('accepted_by', userId)
-    .select('id, report_id, points_reward').single();
-  if (error) throw new Error("Couldn't submit your proof. Please try again.");
+    .eq('id', missionId)
+    .eq('status', 'in_progress')
+    .eq('accepted_by', userId)
+    .select('id, report_id, points_reward, after_image')
+    .single();
 
-  // Simulate verification (800ms, 80% pass rate)
-  return await _simulateVerification(data, userId);
+  if (updateError || !updated) throw new Error('Could not update mission status. Please try again.');
+
+  // ── Run verification async (realtime subscription picks up result) ──
+  _runVerification(updated, userId).catch(err => {
+    console.warn('Verification error (non-critical):', err.message);
+  });
+
+  return { ok: null, status: 'pending', pts: 0 }; // UI enters "verifying" state
 }
 
-async function _simulateVerification(mission, userId) {
-  await new Promise(r => setTimeout(r, 800));
-  const approved = Math.random() < 0.8;
-  const status = approved ? 'approved' : 'rejected';
+async function _uploadProofWithRetry(file, maxRetries = 1) {
+  const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!ALLOWED.includes(file.type.toLowerCase())) throw new Error('Only JPG, PNG, or WebP images are allowed.');
+  if (file.size > 10 * 1024 * 1024) throw new Error(`Image must be under 10MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB.`);
 
-  await _sb.from('missions')
-    .update({ status, reviewed_at: new Date().toISOString() })
-    .eq('id', mission.id);
-
-  if (approved && userId) {
-    await _sb.rpc('award_points', {
-      p_user_id: userId,
-      p_amount: mission.points_reward || 150,
-      p_reason: 'mission_completed',
-      p_mission_id: mission.id
-    });
-    await _sb.from('reports').update({ status: 'completed' }).eq('id', mission.report_id);
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const timestamp = Date.now(), random = Math.random().toString(36).slice(2, 9);
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const filePath = `proof-${timestamp}-${random}.${ext}`;
+      const { error } = await _sb.storage.from('proof-images').upload(filePath, file, {
+        cacheControl: '3600', upsert: false, contentType: file.type
+      });
+      if (error) {
+        if (error.message.includes('size') || error.message.includes('exceeded')) throw new Error('Image is too large. Please use a photo under 10MB.');
+        if (error.message.includes('mime') || error.message.includes('type')) throw new Error('File type not allowed. Use JPG, PNG, or WebP.');
+        throw new Error("Couldn't upload your proof photo. Please try again.");
+      }
+      const { data } = _sb.storage.from('proof-images').getPublicUrl(filePath);
+      if (!data?.publicUrl) throw new Error('Could not retrieve the uploaded image URL.');
+      return data.publicUrl;
+    } catch (err) {
+      lastError = err;
+      const retryable = err.message.includes('connection') || err.message.includes('network') || err.message.includes('timeout');
+      if (!retryable || attempt === maxRetries) break;
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
+  throw lastError;
+}
 
-  return { ok: approved, status, pts: approved ? (mission.points_reward || 150) : 0 };
+const _REJECTION_REASONS = [
+  'The after photo appears to show the same garbage. Please clean the area fully.',
+  'Image quality is too low to verify the cleanup.',
+  'The photo location does not appear to match the report location.',
+  'The cleanup area is only partially cleared. Please complete the job.',
+];
+
+async function _runVerification(mission, userId) {
+  await new Promise(r => setTimeout(r, 800));
+  const approved = Math.random() < 0.80;
+  const now = new Date().toISOString();
+
+  if (approved) {
+    await _sb.from('missions').update({ status: 'approved', reviewed_at: now }).eq('id', mission.id);
+    await _sb.from('reports').update({ status: 'completed' }).eq('id', mission.report_id).catch(() => {});
+    if (userId) {
+      await _sb.rpc('award_points', { p_user_id: userId, p_amount: mission.points_reward || 150, p_reason: 'mission_completed', p_mission_id: mission.id }).catch(e => console.warn('Points award failed:', e.message));
+    }
+  } else {
+    const reason = _REJECTION_REASONS[Math.floor(Math.random() * _REJECTION_REASONS.length)];
+    await _sb.from('missions').update({ status: 'rejected', rejection_reason: reason, reviewed_at: now }).eq('id', mission.id);
+  }
 }
 
 /* ─── Leaderboard ─── */

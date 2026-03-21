@@ -271,7 +271,11 @@ async function _loadMissions(filter) {
 }
 
 function mCard(m, i) {
-  return `<div class="mcard" onclick="go('mission-detail',{id:'${m.id}'})" style="animation:slideUp .22s ease-out both;animation-delay:${i * 40}ms"><div class="mcard-img">${m.rpt?.img ? `<img src="${m.rpt.img}" loading="lazy"/>` : I.trash}</div><div class="mcard-bd"><div class="mcard-top"><span class="mcard-loc">${m.rpt?.loc || 'Unknown'}</span>${badge(m.st)}</div><div class="mcard-meta"><span><span class="avatar mini-av" style="background:${acCol()};display:inline-flex">${ini(m.creator?.username || 'U')}</span> ${m.creator?.username || 'Anon'}</span><span>${timeAgo(m.at)}</span></div><div class="mcard-pts">${I.trphy} +${m.points_reward || 150} pts</div></div></div>`;
+  const showSplit = m.st === 'approved' && m.after_img && m.rpt?.img;
+  const thumbHtml = showSplit
+    ? `<div style="position:relative;width:100%;height:100%;overflow:hidden"><img src="${m.rpt.img}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"/><img src="${m.after_img}" loading="lazy" style="position:absolute;top:0;right:0;width:50%;height:100%;object-fit:cover;border-left:1px solid rgba(255,255,255,.1)"/></div>`
+    : m.rpt?.img ? `<img src="${m.rpt.img}" loading="lazy"/>` : I.trash;
+  return `<div class="mcard" onclick="go('mission-detail',{id:'${m.id}'})" style="animation:slideUp .22s ease-out both;animation-delay:${i * 40}ms"><div class="mcard-img">${thumbHtml}</div><div class="mcard-bd"><div class="mcard-top"><span class="mcard-loc">${m.rpt?.loc || 'Unknown'}</span>${badge(m.st)}</div><div class="mcard-meta"><span><span class="avatar mini-av" style="background:${acCol()};display:inline-flex">${ini(m.creator?.username || 'U')}</span> ${m.creator?.username || 'Anon'}</span><span>${timeAgo(m.at)}</span></div><div class="mcard-pts">${I.trphy} +${m.points_reward || 150} pts</div></div></div>`;
 }
 
 function filt(el, f) {
@@ -494,18 +498,44 @@ async function _loadDetail(mId) {
     const img = m.rpt?.img ? `<img src="${m.rpt.img}" loading="lazy"/>` : `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text-muted)">${I.img}<span style="font-size:12px">No image</span></div>`;
     const isMe = S.user && m.ab === S.user.id;
     const isMine = S.user && m.rpt?.by === S.user.id;
+
+    // Before/after comparison HTML
+    const afterImg = m.after_img;
+    let beforeAfterHtml = '';
+    if (afterImg && (m.st === 'approved' || m.st === 'rejected')) {
+      const borderColor = m.st === 'approved' ? 'rgba(180,255,0,0.2)' : 'rgba(255,77,77,0.2)';
+      beforeAfterHtml = `<div style="display:flex;gap:8px;margin-top:12px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Before</div>
+          <img src="${m.rpt?.img || ''}" style="width:100%;height:100px;border-radius:10px;object-fit:cover;display:block"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">After</div>
+          <img src="${afterImg}" style="width:100%;height:100px;border-radius:10px;object-fit:cover;display:block;border:1px solid ${borderColor}"/>
+        </div>
+      </div>`;
+    }
+
+    const rejectionHtml = (m.st === 'rejected' && m.rejection_reason)
+      ? `<div style="display:flex;gap:8px;align-items:flex-start;background:rgba(255,77,77,0.06);border:1px solid rgba(255,77,77,0.12);border-radius:12px;padding:12px;margin-top:8px">
+           <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#FF4D4D;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+           <span style="font-size:13px;color:#FF6B6B">${m.rejection_reason}</span>
+         </div>` : '';
+
     let act = '';
     if (m.st === 'open' && !isMine) act = `<div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;margin-bottom:8px">${I.trphy} +${m.points_reward || 150} pts on completion</div><button class="btn-p" id="acbtn" onclick="accM('${m.id}')">${I.ok} Accept Mission</button>`;
     else if (m.st === 'open' && isMine) act = '<div style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Waiting for a volunteer.</div>';
     else if ((m.st === 'in-progress' || m.st === 'in_progress') && isMe) act = proofHTML(m.id);
     else if (m.st === 'approved') act = `<div class="res-card ok"><div class="res-ico ok">${I.ok}</div><div class="res-t ok">Cleanup Verified!</div><div class="pts-pop">+${m.points_reward || 150} pts</div><div class="res-s">Points awarded.</div></div>`;
-    else if (m.st === 'rejected') act = `<div class="res-card fail"><div class="res-ico fail">${I.xx}</div><div class="res-t fail">Proof Rejected</div><div class="res-s">Try clearer photos.</div></div>`;
+    else if (m.st === 'rejected') act = `<div class="res-card fail"><div class="res-ico fail">${I.xx}</div><div class="res-t fail">Proof Rejected</div><div class="res-s">Try clearer photos next time.</div></div>`;
     else if (m.st === 'in-progress' || m.st === 'in_progress') act = `<div style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Being cleaned by ${m.acceptor?.username || 'someone'}.</div>`;
     else if (m.st === 'pending') act = `<div class="verify-card"><span class="spin" style="border-color:rgba(255,255,255,.15);border-top-color:#fff"></span><div class="ver-t">Verifying cleanup…</div><div style="font-size:12px;color:var(--text-muted)">AI reviewing your photo</div></div>`;
 
     s.innerHTML = `<div class="scr-hd"><button class="back-btn" onclick="go('${S.prev || 'missions'}')">${I.back}</button><span class="scr-hd-t">Mission Detail</span><div style="margin-left:auto">${badge(m.st)}</div></div>
 <div class="det-hero">${img}</div>
+${beforeAfterHtml}
 <div class="det-card"><div class="det-loc">${m.rpt?.loc || 'Unknown'}</div><div class="det-rep"><div class="avatar" style="width:24px;height:24px;font-size:9px;background:${acCol()}">${ini(m.creator?.username || 'U')}</div><span style="font-size:13px;color:var(--text-secondary);flex:1">${m.creator?.username || 'Anon'}</span><span style="font-size:11px;color:var(--text-muted)">${timeAgo(m.at)}</span></div>${m.rpt?.desc ? `<div class="det-desc">${m.rpt.desc}</div>` : ''}</div>
+${rejectionHtml}
 <div class="det-card" id="parea">${act}</div><div style="height:24px"></div>`;
 
     // Realtime: watch for status changes (e.g. verification result)
@@ -520,19 +550,43 @@ async function _loadDetail(mId) {
 }
 
 function proofHTML(mId) {
-  return `<div style="display:flex;flex-direction:column;gap:12px"><div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px">${I.trphy} +150 pts reward</div><div class="uzone" id="pz"><input type="file" accept="image/jpeg,image/png,image/webp" onchange="hPrf(this,'${mId}')"/>${I.up}<span>Upload proof</span></div><div class="ferr" id="pe"></div><button class="btn-p" id="pbtn" onclick="subPrf('${mId}')" disabled>Submit Proof</button></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px">${I.trphy} +150 pts reward</div>
+  <div class="uzone" id="pz" onclick="document.getElementById('proof-image-input').click()">${I.up}<span>Upload proof photo</span></div>
+  <input type="file" id="proof-image-input" accept="image/jpeg,image/png,image/webp" style="display:none" aria-hidden="true"/>
+  <div class="ferr" id="pe"></div>
+  <div id="pprog-wrap" style="display:none;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">
+    <div id="pprog-bar" style="height:100%;width:0%;background:var(--accent);transition:width 100ms ease;border-radius:2px"></div>
+  </div>
+  <button class="btn-p" id="pbtn" onclick="subPrf('${mId}')" disabled>Submit Proof</button>
+</div>`;
 }
 
-function hPrf(inp, mId) {
-  const f = inp.files[0]; if (!f) return;
-  _pImgFile = f;
-  const r = new FileReader();
-  r.onload = e => {
-    document.getElementById('pz').innerHTML = `<input type="file" accept="image/jpeg,image/png,image/webp" onchange="hPrf(this,'${mId}')"/><img src="${e.target.result}"/>`;
-    document.getElementById('pbtn').disabled = false;
-  };
-  r.readAsDataURL(f);
+function _wirePrfInput(mId) {
+  const inp = document.getElementById('proof-image-input');
+  if (!inp) return;
+  inp.addEventListener('change', e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const peEl = document.getElementById('pe');
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!ALLOWED.includes(f.type.toLowerCase())) { if (peEl) peEl.textContent = 'Only JPG, PNG, or WebP images are allowed.'; e.target.value = ''; return; }
+    if (f.size > 10 * 1024 * 1024) { if (peEl) peEl.textContent = `Image must be under 10MB. Your file is ${(f.size / 1024 / 1024).toFixed(1)}MB.`; e.target.value = ''; return; }
+    if (peEl) peEl.textContent = '';
+    _pImgFile = f;
+    const r = new FileReader();
+    r.onload = ev => {
+      const pz = document.getElementById('pz');
+      if (pz) { pz.innerHTML = `<img src="${ev.target.result}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"/><span style="position:relative;z-index:2;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px">Tap to change</span>`; pz.onclick = () => document.getElementById('proof-image-input').click(); }
+      const pbtn = document.getElementById('pbtn'); if (pbtn) pbtn.disabled = false;
+    };
+    r.onerror = () => { if (peEl) peEl.textContent = 'Could not read the file. Please try another photo.'; _pImgFile = null; };
+    r.readAsDataURL(f);
+    e.target.value = '';
+  });
 }
+
+// Legacy inline handler kept for compat
+function hPrf(inp, mId) { /* no-op — wired via event listener now */ }
 
 async function accM(mId) {
   const btn = document.getElementById('acbtn'); btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Accepting…`;
@@ -542,6 +596,7 @@ async function accM(mId) {
     setTimeout(() => {
       const area = document.getElementById('parea');
       if (area) { area.innerHTML = proofHTML(mId); area.style.opacity = '0'; requestAnimationFrame(() => { area.style.transition = 'opacity .2s'; area.style.opacity = '1' }) }
+      _wirePrfInput(mId);
     }, 400);
   } catch (e) {
     btn.disabled = false; btn.innerHTML = I.ok + ' Accept Mission';
@@ -550,26 +605,35 @@ async function accM(mId) {
   }
 }
 
+function _setPProof(pct) {
+  const bar = document.getElementById('pprog-bar'), wrap = document.getElementById('pprog-wrap');
+  if (!bar || !wrap) return;
+  if (pct <= 0) { wrap.style.display = 'none'; bar.style.width = '0%'; return; }
+  wrap.style.display = 'block'; bar.style.width = pct + '%';
+}
+
 async function subPrf(mId) {
-  if (!_pImgFile) return;
-  const btn = document.getElementById('pbtn'); btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Verifying…`;
-  const area = document.getElementById('parea');
-  if (area) area.innerHTML = `<div class="verify-card"><span class="spin" style="border-color:rgba(255,255,255,.15);border-top-color:#fff"></span><div class="ver-t">Verifying cleanup…</div><div style="font-size:12px;color:var(--text-muted)">AI reviewing your photo</div></div>`;
+  if (!_pImgFile) { const pe = document.getElementById('pe'); if (pe) pe.textContent = 'Please upload a photo showing the cleaned area.'; return; }
+  const peEl = document.getElementById('pe'); if (peEl) peEl.textContent = '';
+  const btn = document.getElementById('pbtn');
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Uploading…`;
+  _setPProof(0);
+  let iv = _simProgress(_setPProof);
   try {
     const result = await submitProof(mId, _pImgFile, S.user.id);
-    // Refresh profile points
-    if (S.user?.id) { const updated = await getProfile(S.user.id); S.user = updated; }
+    clearInterval(iv); _setPProof(100);
+    await new Promise(r => setTimeout(r, 300)); _setPProof(0);
     _pImgFile = null;
-    if (result.ok) {
-      if (area) area.innerHTML = `<div class="res-card ok"><div class="res-ico ok">${I.ok}</div><div class="res-t ok">Cleanup Verified!</div><div class="pts-pop">+${result.pts} pts</div><div class="res-s">Amazing work!</div></div>`;
-    } else {
-      const reasons = ["Photo doesn't show cleanup.", "Area only partially cleared.", "Poor lighting."];
-      if (area) area.innerHTML = `<div class="res-card fail"><div class="res-ico fail">${I.xx}</div><div class="res-t fail">Proof Rejected</div><div class="res-s">${reasons[Math.floor(Math.random() * reasons.length)]}</div></div>`;
-    }
+    // submitProof now returns { ok: null, status: 'pending' } — show verifying state
+    const area = document.getElementById('parea');
+    if (area) area.innerHTML = `<div class="verify-card"><span class="spin" style="border-color:rgba(255,255,255,.15);border-top-color:#fff"></span><div class="ver-t">Verifying cleanup…</div><div style="font-size:12px;color:var(--text-muted)">AI reviewing your photo</div></div>`;
+    // Realtime subscription already set up in _loadDetail will pick up approved/rejected
   } catch (e) {
-    if (area) area.innerHTML = proofHTML(mId);
+    clearInterval(iv); _setPProof(0);
+    btn.disabled = false; btn.textContent = 'Submit Proof';
+    const msg = e.message || "Couldn't submit your proof. Please try again.";
     const pe = document.getElementById('pe');
-    if (pe) pe.textContent = e.message || "Couldn't submit your proof. Please try again.";
+    if (pe) pe.textContent = msg;
   }
 }
 
