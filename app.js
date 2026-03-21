@@ -259,49 +259,108 @@ function _initHomeMap(reports) {
   const mapEl = document.getElementById('home-map');
   if (!mapEl) return;
 
-  // Destroy previous instance if re-loading
+  // Destroy previous instance cleanly
   if (_homeMap) { _homeMap.remove(); _homeMap = null; }
 
-  const center = reports.length > 0
-    ? [reports[0].lat, reports[0].lng]
-    : [20.5937, 78.9629]; // fallback: center of India
+  // Show loading shimmer while we wait for geolocation
+  mapEl.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0E0E0E;border-radius:18px">
+    <span style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.08);border-top-color:#22FF88;animation:spin .8s linear infinite;display:block"></span>
+  </div>`;
 
-  _homeMap = L.map('home-map', {
-    center,
-    zoom: reports.length > 0 ? 13 : 5,
-    zoomControl: false,
-    attributionControl: false,
-    dragging: true,
-    scrollWheelZoom: false
-  });
+  const FALLBACK = [20.5937, 78.9629]; // India centre
+  const DEFAULT_ZOOM = 13;
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(_homeMap);
+  function buildMap(lat, lng) {
+    // Clear loading state
+    mapEl.innerHTML = '';
 
-  const statusColors = { open: '#4D7A58', 'in-progress': '#4D8EFF', 'in_progress': '#4D8EFF', completed: '#888', approved: '#888' };
+    const map = L.map('home-map', {
+      center: [lat, lng],
+      zoom: DEFAULT_ZOOM,
+      zoomControl: false,
+      attributionControl: false,
+      dragging: true,
+      scrollWheelZoom: false,
+      tap: true,
+      touchZoom: true,
+      doubleClickZoom: false
+    });
 
-  reports.forEach(r => {
-    const color = statusColors[r.status] || '#888';
-    const marker = L.circleMarker([r.lat, r.lng], {
-      radius: 7,
-      fillColor: color,
-      color: '#fff',
-      weight: 1.5,
-      fillOpacity: 0.9
-    }).addTo(_homeMap);
-    marker.bindPopup(`<b>${r.location || 'Report'}</b><br><span style="text-transform:capitalize;color:${color}">${(r.status || '').replace(/_/g, ' ')}</span>`);
-  });
+    _homeMap = map;
 
-  // Fit map to all markers if we have points
-  if (reports.length > 1) {
-    const bounds = L.latLngBounds(reports.map(r => [r.lat, r.lng]));
-    _homeMap.fitBounds(bounds, { padding: [10, 10] });
+    // ── Dark tile: CartoDB DarkMatter, no API key ──
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+
+    // ── Status colors per spec ──
+    const statusColors = {
+      open: '#22FF88',
+      'in-progress': '#7EB8FF',
+      in_progress: '#7EB8FF',
+      completed: '#4D4D4D',
+      approved: '#4D4D4D'
+    };
+
+    // ── Plot report markers ──
+    reports.forEach(r => {
+      if (!r.lat || !r.lng) return;
+      const color = statusColors[r.status] || '#4D4D4D';
+      const label = (r.status || '').replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+      const marker = L.circleMarker([r.lat, r.lng], {
+        radius: 6,
+        fillColor: color,
+        color: 'rgba(0,0,0,0.6)',
+        weight: 1,
+        fillOpacity: 1,
+        className: 'sweep-marker'
+      }).addTo(map);
+
+      marker.bindPopup(
+        `<div style="min-width:120px">
+           <div style="font-weight:600;font-size:13px;color:#fff;margin-bottom:3px">${r.location || 'Report'}</div>
+           <div style="font-size:11px;color:${color}">${label}</div>
+         </div>`,
+        { closeButton: false, className: 'sweep-popup', maxWidth: 200 }
+      );
+    });
+
+    // ── User location marker (pulsing white dot, via custom HTML) ──
+    const userIcon = L.divIcon({
+      className: '',
+      html: `<div class="user-dot-outer"><div class="user-dot-inner"></div></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+
+    // Fit to markers if we have several, otherwise stay centered on user
+    if (reports.length > 1) {
+      const pts = reports.filter(r => r.lat && r.lng).map(r => [r.lat, r.lng]);
+      pts.push([lat, lng]);
+      try {
+        map.fitBounds(L.latLngBounds(pts), { padding: [16, 16], maxZoom: 15 });
+      } catch (_) {}
+    }
+
+    setTimeout(() => map.invalidateSize(), 150);
   }
 
-  // Fix tile rendering after container becomes visible
-  setTimeout(() => _homeMap && _homeMap.invalidateSize(), 150);
+  // Request geolocation; fall back silently on deny/error
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => buildMap(pos.coords.latitude, pos.coords.longitude),
+      ()  => buildMap(...FALLBACK),
+      { timeout: 6000, maximumAge: 60000 }
+    );
+  } else {
+    buildMap(...FALLBACK);
+  }
 }
+
 
 function mRow(m, i) {
   const meta = [timeAgo(m.at), m.rpt?.dist].filter(Boolean);
