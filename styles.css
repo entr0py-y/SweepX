@@ -99,7 +99,7 @@ body {
 /* ── App inner — holds all screens ── */
 .app-inner {
   width: 100%;
-  height: calc(100% - 44px - 68px);
+  height: calc(100% - 68px);
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -113,14 +113,6 @@ body {
 }
 
 /* ── Auth mode — status bar floats over full-height screen ── */
-.app-shell.auth-mode .status-bar {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  z-index: 20;
-  background: transparent;
-  color: #fff
-}
-
 .app-shell.auth-mode .app-inner {
   height: 100%;
   overflow: hidden

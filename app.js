@@ -106,7 +106,7 @@ function renderAuth() {
   if (phone) phone.classList.add('auth-mode');
   if (!s) return;
   s.innerHTML = `<div class="auth-bg"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div><div class="grain"></div><div class="grid-lines"></div></div><div class="auth-overlay"></div>
-    <div class="auth-content">${_authSBHtml()}<div class="auth-body" id="auth-body">${_authEntryBody()}</div><div class="auth-home-bar"></div></div>`;
+    <div class="auth-content"><div class="auth-body" id="auth-body">${_authEntryBody()}</div><div class="auth-home-bar"></div></div>`;
   s.style.display = 'block'; s.classList.add('active', 'screen-enter');
 }
 
