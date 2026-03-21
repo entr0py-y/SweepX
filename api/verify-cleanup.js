@@ -5,13 +5,32 @@
 */
 
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
 const { validateImageUrl, fetchImageAsBase64 } = require('../lib/imageUtils');
 const { analyzeCleanupImages, parseVerificationResponse, VISION_MODEL } = require('../lib/verifyCleanup');
 
-// Supabase client (server-side, uses service role if available)
+// Supabase client (server-side)
 function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Fallback: Read directly from the frontend config.js specifically for this static setup
+  if (!url || !key) {
+    try {
+      const configPath = path.join(process.cwd(), 'config.js');
+      const configText = fs.readFileSync(configPath, 'utf8');
+      
+      const urlMatch = configText.match(/NEXT_PUBLIC_SUPABASE_URL\s*=\s*['"]([^'"]+)['"]/);
+      const keyMatch = configText.match(/NEXT_PUBLIC_SUPABASE_ANON_KEY\s*=\s*['"]([^'"]+)['"]/);
+      
+      if (urlMatch) url = urlMatch[1];
+      if (keyMatch && !process.env.SUPABASE_SERVICE_ROLE_KEY) key = keyMatch[1];
+    } catch (err) {
+      console.warn('Could not read config.js fallback:', err.message);
+    }
+  }
+
   if (!url || !key) throw new Error('Supabase env vars not configured');
   return createClient(url, key);
 }
