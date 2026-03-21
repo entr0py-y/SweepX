@@ -180,7 +180,7 @@ function renderHome() {
 <div class="sg">
 <div class="sc ft"><div class="sc-top"><div class="sc-ico">${I.pin}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Reports</div><div class="sc-val" id="sc-reports">–</div></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions Done</div><div class="sc-val" id="sc-missions">–</div></div></div>
-<div class="sc"><div class="sc-top"><div class="sc-ico">${I.usrs}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Active Cleaners</div><div class="sc-val" id="sc-cleaners">–</div></div></div>
+<div class="sc sc-map" id="sc-map-tile" style="cursor:default;overflow:hidden;padding:0"><div id="home-map" style="width:100%;height:100%;border-radius:inherit"></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.star}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Your Rank</div><div class="sc-val" id="sc-rank">–</div></div></div>
 </div>
 <div class="ss" id="ss-strip"><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#4D7A58"></div><span class="ss-l">Open</span></div><span class="ss-v" id="ss-open">–</span></div><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#4D8EFF"></div><span class="ss-l">In Progress</span></div><span class="ss-v" id="ss-ip">–</span></div><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#B4FF00"></div><span class="ss-l">Completed</span></div><span class="ss-v" id="ss-done">–</span></div></div>
@@ -195,21 +195,23 @@ function renderHome() {
 
 async function _loadHome() {
   try {
-    const [missions, lbData] = await Promise.all([getMissions(), getLeaderboard()]);
+    const [missions, lbData, reports] = await Promise.all([
+      getMissions(),
+      getLeaderboard(),
+      _getReportsForMap()
+    ]);
 
     const op = missions.filter(m => m.st === 'open').length;
     const ip = missions.filter(m => m.st === 'in-progress').length;
     const dn = missions.filter(m => m.st === 'approved').length;
-    const cleaners = new Set(missions.filter(m => m.ab).map(m => m.ab)).size || lbData.length;
 
-    // Find rank
-    const rank = lbData.findIndex(u => u.id === S.user?.id) + 1 || '—';
+    // Find rank by username
+    const rank = lbData.findIndex(u => u.username === S.user?.username) + 1 || '—';
 
-    // Update stats with count-up
+    // Update stats
     const statsMap = {
       'sc-reports': S.user?.reports_submitted || 0,
       'sc-missions': S.user?.missions_completed || 0,
-      'sc-cleaners': cleaners,
     };
     Object.entries(statsMap).forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -232,7 +234,10 @@ async function _loadHome() {
         : `<div class="empty">${I.pin}<div class="empty-t">No missions nearby</div><div class="empty-s">Report a garbage location to create one.</div></div>`;
     }
 
-    // Realtime: prepend new missions to feed on INSERT
+    // Init map
+    _initHomeMap(reports);
+
+    // Realtime
     const ch = subscribeReports(() => _loadHome());
     _realtimeChannels.push(ch);
 
@@ -240,6 +245,62 @@ async function _loadHome() {
     const feed = document.getElementById('missions-feed');
     if (feed) feed.innerHTML = `<div class="empty">${I.xx}<div class="empty-t">Couldn't load missions</div><button class="btn-s" style="margin-top:8px" onclick="_loadHome()">Retry</button></div>`;
   }
+}
+
+async function _getReportsForMap() {
+  try {
+    const { data } = await _sb.from('reports').select('id, lat, lng, status, location').not('lat', 'is', null).not('lng', 'is', null);
+    return data || [];
+  } catch { return []; }
+}
+
+let _homeMap = null;
+function _initHomeMap(reports) {
+  const mapEl = document.getElementById('home-map');
+  if (!mapEl) return;
+
+  // Destroy previous instance if re-loading
+  if (_homeMap) { _homeMap.remove(); _homeMap = null; }
+
+  const center = reports.length > 0
+    ? [reports[0].lat, reports[0].lng]
+    : [20.5937, 78.9629]; // fallback: center of India
+
+  _homeMap = L.map('home-map', {
+    center,
+    zoom: reports.length > 0 ? 13 : 5,
+    zoomControl: false,
+    attributionControl: false,
+    dragging: true,
+    scrollWheelZoom: false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(_homeMap);
+
+  const statusColors = { open: '#4D7A58', 'in-progress': '#4D8EFF', 'in_progress': '#4D8EFF', completed: '#888', approved: '#888' };
+
+  reports.forEach(r => {
+    const color = statusColors[r.status] || '#888';
+    const marker = L.circleMarker([r.lat, r.lng], {
+      radius: 7,
+      fillColor: color,
+      color: '#fff',
+      weight: 1.5,
+      fillOpacity: 0.9
+    }).addTo(_homeMap);
+    marker.bindPopup(`<b>${r.location || 'Report'}</b><br><span style="text-transform:capitalize;color:${color}">${(r.status || '').replace(/_/g, ' ')}</span>`);
+  });
+
+  // Fit map to all markers if we have points
+  if (reports.length > 1) {
+    const bounds = L.latLngBounds(reports.map(r => [r.lat, r.lng]));
+    _homeMap.fitBounds(bounds, { padding: [10, 10] });
+  }
+
+  // Fix tile rendering after container becomes visible
+  setTimeout(() => _homeMap && _homeMap.invalidateSize(), 150);
 }
 
 function mRow(m, i) {

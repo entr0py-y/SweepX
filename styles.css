@@ -2211,3 +2211,43 @@ body {
   color: var(--text-muted);
   margin-top: 4px
 }
+
+/* ─── Live Map Tile ─── */
+.sc.sc-map {
+  padding: 0 !important;
+  overflow: hidden !important;
+  cursor: default !important;
+  height: 140px;
+  min-height: 140px
+}
+
+.sc.sc-map #home-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  z-index: 0
+}
+
+/* Dark Leaflet popup */
+.leaflet-popup-content-wrapper {
+  background: #111;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  font-family: inherit;
+  font-size: 13px
+}
+
+.leaflet-popup-tip {
+  background: #111
+}
+
+.leaflet-popup-close-button {
+  color: #888 !important
+}
+
+/* Hide Leaflet attribution to keep tile clean */
+.leaflet-control-attribution {
+  display: none !important
+}
