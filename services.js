@@ -166,7 +166,7 @@ async function submitProof(missionId, afterImageFile, userId) {
   // ── Guard: verify mission is still in_progress and owned by user ──
   const { data: mission, error: fetchError } = await _sb
     .from('missions')
-    .select('id, status, accepted_by, report_id, points_reward')
+    .select('id, status, accepted_by, report_id, points_reward, before_image')
     .eq('id', missionId)
     .single();
 
@@ -185,17 +185,81 @@ async function submitProof(missionId, afterImageFile, userId) {
     .eq('id', missionId)
     .eq('status', 'in_progress')
     .eq('accepted_by', userId)
-    .select('id, report_id, points_reward, after_image')
+    .select('id, report_id, points_reward, after_image, before_image')
     .single();
 
   if (updateError || !updated) throw new Error('Could not update mission status. Please try again.');
 
-  // ── Run verification async (realtime subscription picks up result) ──
-  _runVerification(updated, userId).catch(err => {
-    console.warn('Verification error (non-critical):', err.message);
-  });
+  // ── Get before image URL ──────────────────────────────
+  let beforeImageUrl = updated.before_image || mission.before_image;
+  if (!beforeImageUrl) {
+    const { data: report } = await _sb.from('reports')
+      .select('image_url').eq('id', updated.report_id).single();
+    beforeImageUrl = report?.image_url;
+  }
+
+  // ── Fire verification non-blocking (realtime picks up result) ──
+  if (beforeImageUrl) {
+    _callVerificationAPI({
+      missionId,
+      beforeImageUrl,
+      afterImageUrl
+    }).catch(err => console.warn('Verification call failed (non-critical):', err.message));
+  } else {
+    // No before image — run fallback simulation
+    _runVerificationFallback(updated, userId).catch(() => {});
+  }
 
   return { ok: null, status: 'pending', pts: 0 }; // UI enters "verifying" state
+}
+
+async function _callVerificationAPI({ missionId, beforeImageUrl, afterImageUrl }) {
+  const username = window.S?.user?.username;
+  const res = await fetch('/api/verify-cleanup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mission_id: missionId,
+      before_image_url: beforeImageUrl,
+      after_image_url: afterImageUrl
+    })
+  });
+
+  let data;
+  try { data = await res.json(); } catch {
+    throw new Error('Verification service returned an unreadable response.');
+  }
+
+  // If approved, also tag the report with completed_by (client has username context)
+  if (data.verdict === 'approved' && username) {
+    await _sb.from('reports').update({ completed_by: username })
+      .eq('id', window.S?.missions?.find?.(m => m.id === missionId)?.report_id || '')
+      .catch(() => {});
+  }
+
+  return data;
+}
+
+// Fallback used only when no before image URL is available
+async function _runVerificationFallback(mission, userId) {
+  await new Promise(r => setTimeout(r, 1200));
+  const approved = Math.random() < 0.80;
+  const now = new Date().toISOString();
+  const currentUsername = window.S?.user?.username || 'Unknown';
+
+  if (approved) {
+    await _sb.from('missions').update({ status: 'approved', reviewed_at: now }).eq('id', mission.id);
+    await _sb.from('reports').update({ status: 'completed', completed_by: currentUsername })
+      .eq('id', mission.report_id).catch(() => {});
+  } else {
+    const reasons = [
+      'The after photo appears to show the same garbage. Please clean the area fully.',
+      'Image quality is too low to verify the cleanup.',
+      'The cleanup area is only partially cleared. Please complete the job.',
+    ];
+    const reason = reasons[Math.floor(Math.random() * reasons.length)];
+    await _sb.from('missions').update({ status: 'rejected', rejection_reason: reason, reviewed_at: now }).eq('id', mission.id);
+  }
 }
 
 async function _uploadProofWithRetry(file, maxRetries = 1) {
@@ -230,30 +294,6 @@ async function _uploadProofWithRetry(file, maxRetries = 1) {
   throw lastError;
 }
 
-const _REJECTION_REASONS = [
-  'The after photo appears to show the same garbage. Please clean the area fully.',
-  'Image quality is too low to verify the cleanup.',
-  'The photo location does not appear to match the report location.',
-  'The cleanup area is only partially cleared. Please complete the job.',
-];
-
-async function _runVerification(mission, userId) {
-  await new Promise(r => setTimeout(r, 800));
-  const approved = Math.random() < 0.80;
-  const now = new Date().toISOString();
-
-  if (approved) {
-    await _sb.from('missions').update({ status: 'approved', reviewed_at: now }).eq('id', mission.id);
-    
-    // As per new basic requirements: set reports to completed and completed_by to the current user's username
-    const currentUsername = window.S?.user?.username || localStorage.getItem('username') || 'Unknown';
-    await _sb.from('reports').update({ status: 'completed', completed_by: currentUsername }).eq('id', mission.report_id).catch(() => {});
-
-  } else {
-    const reason = _REJECTION_REASONS[Math.floor(Math.random() * _REJECTION_REASONS.length)];
-    await _sb.from('missions').update({ status: 'rejected', rejection_reason: reason, reviewed_at: now }).eq('id', mission.id);
-  }
-}
 
 /* ─── Leaderboard ─── */
 async function getLeaderboard() {
