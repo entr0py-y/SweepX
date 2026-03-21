@@ -100,13 +100,11 @@ module.exports = async function handler(req, res) {
 
   // ── Call LLaMA Vision ─────────────────────────────────
   let parsedResult, rawText, tokensUsed, modelUsed;
-  let usedFallback = false;
 
   try {
     const result = await analyzeCleanupImages(
       beforeImg.base64, beforeImg.mediaType,
-      afterImg.base64, afterImg.mediaType,
-      false
+      afterImg.base64, afterImg.mediaType
     );
     rawText = result.rawText;
     tokensUsed = result.tokensUsed;
@@ -114,35 +112,21 @@ module.exports = async function handler(req, res) {
     parsedResult = parseVerificationResponse(rawText);
 
   } catch (primaryErr) {
-    try {
-      const fallback = await analyzeCleanupImages(
-        beforeImg.base64, beforeImg.mediaType,
-        afterImg.base64, afterImg.mediaType,
-        true
-      );
-      rawText = fallback.rawText;
-      tokensUsed = fallback.tokensUsed;
-      modelUsed = fallback.modelUsed;
-      usedFallback = true;
-      parsedResult = parseVerificationResponse(rawText);
-
-    } catch (fallbackErr) {
-      // Both models failed — manual review
-      await _applyVerdict(supabase, {
-        mission, verdict: 'manual_review',
-        reason: 'AI analysis unavailable. Submitted for manual review.',
-        confidence: null, details: null,
-        modelUsed: VISION_MODEL, tokensUsed: null,
-        latencyMs: Date.now() - startTime, rawText: null,
-        error: `Primary: ${primaryErr.message} | Fallback: ${fallbackErr.message}`,
-        beforeUrl: validBefore, afterUrl: validAfter
-      });
-      return res.status(200).json({
-        verdict: 'manual_review',
-        reason: 'Verification service unavailable. Your cleanup has been saved for review.',
-        fallback: true
-      });
-    }
+    // Model failed — manual review
+    await _applyVerdict(supabase, {
+      mission, verdict: 'manual_review',
+      reason: 'AI analysis unavailable. Submitted for manual review.',
+      confidence: null, details: null,
+      modelUsed: VISION_MODEL, tokensUsed: null,
+      latencyMs: Date.now() - startTime, rawText: null,
+      error: `API Error: ${primaryErr.message}`,
+      beforeUrl: validBefore, afterUrl: validAfter
+    });
+    return res.status(200).json({
+      verdict: 'manual_review',
+      reason: 'Verification service unavailable. Your cleanup has been saved for review.',
+      fallback: true
+    });
   }
 
   // ── Apply final verdict ───────────────────────────────
@@ -165,7 +149,6 @@ module.exports = async function handler(req, res) {
     details: parsedResult.details,
     points_awarded: parsedResult.verdict === 'approved' ? (mission.points_reward || 150) : 0,
     model_used: modelUsed,
-    used_fallback: usedFallback,
     latency_ms: latencyMs
   });
 };

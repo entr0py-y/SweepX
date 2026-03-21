@@ -4,10 +4,10 @@
   "private": true,
   "description": "SweepX — Clean it. Earn it.",
   "dependencies": {
-    "together-ai": "^0.14.0",
     "@supabase/supabase-js": "^2.0.0"
   },
   "engines": {
     "node": ">=18"
   }
 }
+
