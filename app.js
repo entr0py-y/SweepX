@@ -273,7 +273,15 @@ function renderHome() {
 <div class="sg">
 <div class="sc ft"><div class="sc-top"><div class="sc-ico">${I.pin}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Reports</div><div class="sc-val" id="sc-reports">–</div></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions Done</div><div class="sc-val" id="sc-missions">–</div></div></div>
-<div class="sc sc-map" id="sc-map-tile" style="cursor:default;overflow:hidden;padding:0"><div id="home-map" style="width:100%;height:100%;border-radius:inherit"></div></div>
+<div class="sc sc-map" id="sc-map-tile" style="cursor:pointer;overflow:hidden;padding:0">
+  <div class="home-map-shell" id="home-map-shell" role="button" aria-expanded="false" tabindex="0">
+    <div class="home-map-header">
+      <button class="home-map-close" id="home-map-close" aria-label="Close map" title="Close map">${I.xx}</button>
+    </div>
+    <div id="home-map" style="width:100%;height:100%;border-radius:inherit"></div>
+    <div class="home-map-hint" id="home-map-hint">Click to expand</div>
+  </div>
+</div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.star}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Your Rank</div><div class="sc-val" id="sc-rank">–</div></div></div>
 </div>
 <div class="ss" id="ss-strip"><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#4D7A58"></div><span class="ss-l">Open</span></div><span class="ss-v" id="ss-open">–</span></div><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#4D8EFF"></div><span class="ss-l">In Progress</span></div><span class="ss-v" id="ss-ip">–</span></div><div class="ss-c"><div class="ss-dr"><div class="ss-dot" style="background:#B4FF00"></div><span class="ss-l">Completed</span></div><span class="ss-v" id="ss-done">–</span></div></div>
@@ -348,9 +356,12 @@ async function _getReportsForMap() {
 }
 
 let _homeMap = null;
+let _homeMapExpanded = false;
 function _initHomeMap(reports) {
   const mapEl = document.getElementById('home-map');
   if (!mapEl) return;
+
+  _bindHomeMapTileInteractions();
 
   // Destroy previous instance cleanly
   if (_homeMap) { _homeMap.remove(); _homeMap = null; }
@@ -364,6 +375,8 @@ function _initHomeMap(reports) {
   const DEFAULT_ZOOM = 13;
 
   function buildMap(lat, lng) {
+    _setHomeMapMeta(lat, lng);
+
     // Clear loading state
     mapEl.innerHTML = '';
 
@@ -452,6 +465,101 @@ function _initHomeMap(reports) {
   } else {
     buildMap(...FALLBACK);
   }
+}
+
+function _setHomeMapMeta(lat, lng) {
+  const locationEl = document.getElementById('home-map-location');
+  if (locationEl && !locationEl.dataset.userUpdated) {
+    locationEl.textContent = 'Finding your exact location...';
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const freshLat = pos.coords.latitude;
+      const freshLng = pos.coords.longitude;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${freshLat}&lon=${freshLng}`);
+        const data = await res.json();
+        const address = data?.address || {};
+        const road = address.road || address.pedestrian || address.footway || address.path;
+        const houseNumber = address.house_number;
+        const neighborhood = address.neighbourhood || address.suburb || address.city_district || address.hamlet;
+        const city = address.city || address.town || address.village || address.county;
+
+        const streetLine = [houseNumber, road].filter(Boolean).join(' ');
+        const areaLine = [neighborhood, city].filter(Boolean).join(', ');
+        const preciseLocation = streetLine || areaLine || (data?.display_name ? data.display_name.split(',').slice(0, 3).join(',').trim() : 'Current location');
+
+        if (locationEl) {
+          locationEl.textContent = preciseLocation;
+          locationEl.dataset.userUpdated = '1';
+        }
+      } catch (_) {}
+    }, () => {
+      if (locationEl && !locationEl.dataset.userUpdated) {
+        locationEl.textContent = 'Current location';
+      }
+    });
+  }
+}
+
+function _bindHomeMapTileInteractions() {
+  const tile = document.getElementById('home-map-shell');
+  if (!tile || tile.dataset.bound === '1') return;
+
+  const setExpanded = expanded => {
+    _homeMapExpanded = expanded;
+    document.body.classList.toggle('map-expanded-open', expanded);
+    const tileWrap = document.getElementById('sc-map-tile');
+    if (tileWrap) tileWrap.classList.toggle('is-expanded', expanded);
+    tile.classList.toggle('is-expanded', expanded);
+    tile.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    const hint = document.getElementById('home-map-hint');
+    if (hint) hint.textContent = expanded ? 'Tap × to close' : 'Click to expand';
+    if (_homeMap) setTimeout(() => _homeMap.invalidateSize(), expanded ? 260 : 220);
+  };
+
+  const toggle = () => {
+    _homeMapExpanded = !_homeMapExpanded;
+    setExpanded(_homeMapExpanded);
+  };
+
+  tile.addEventListener('click', e => {
+    const closeBtn = document.getElementById('home-map-close');
+    if (closeBtn && (e.target === closeBtn || closeBtn.contains(e.target))) {
+      e.preventDefault();
+      setExpanded(false);
+      return;
+    }
+
+    if (!_homeMapExpanded) {
+      toggle();
+    }
+  });
+
+  const closeBtn = document.getElementById('home-map-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      setExpanded(false);
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && _homeMapExpanded) {
+      setExpanded(false);
+    }
+  });
+
+  tile.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+  tile.dataset.bound = '1';
 }
 
 
