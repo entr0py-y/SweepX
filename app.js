@@ -52,8 +52,8 @@ const I = {
 
 /* ─── Badge ─── */
 function badge(st) {
-  const m = { open: 'b-open', 'in-progress': 'b-ip', in_progress: 'b-ip', pending: 'b-pend', approved: 'b-ok', rejected: 'b-rej' };
-  const l = { open: 'Open', 'in-progress': 'In Progress', in_progress: 'In Progress', pending: 'Verifying…', approved: 'Approved', rejected: 'Rejected' };
+  const m = { open: 'b-open', 'in-progress': 'b-ip', in_progress: 'b-ip', pending: 'b-pend', approved: 'b-ok', rejected: 'b-rej', manual_review: 'b-pend' };
+  const l = { open: 'Open', 'in-progress': 'In Progress', in_progress: 'In Progress', pending: 'Verifying…', approved: 'Approved', rejected: 'Rejected', manual_review: 'Under Review' };
   return `<span class="badge ${m[st] || 'b-open'}">${l[st] || st}</span>`;
 }
 
@@ -905,6 +905,7 @@ async function _loadDetail(mId) {
     else if ((m.st === 'in-progress' || m.st === 'in_progress') && isMe) act = proofHTML(m.id);
     else if (m.st === 'approved') act = `<div class="res-card ok"><div class="res-ico ok">${I.ok}</div><div class="res-t ok">Cleanup Verified!</div><div class="pts-pop">+${m.points_reward || 150} pts</div><div class="res-s">Points awarded.</div></div>`;
     else if (m.st === 'rejected') act = `<div class="res-card fail"><div class="res-ico fail">${I.xx}</div><div class="res-t fail">Proof Rejected</div><div class="res-s">Try clearer photos next time.</div></div>`;
+    else if (m.st === 'manual_review') act = `<div class="res-card warn" style="background:var(--surface-2);border:1px dashed rgba(255,185,0,0.4);border-radius:12px;padding:16px;text-align:center"><div style="color:#FFB900;font-size:24px;margin-bottom:8px">⚠️</div><div style="color:#FFB900;font-weight:700;font-size:16px;margin-bottom:4px">Manual Review</div><div style="color:var(--text-muted);font-size:13px">Waiting for human review due to low AI confidence.</div></div>`;
     else if (m.st === 'in-progress' || m.st === 'in_progress') act = `<div style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Being cleaned by ${m.acceptor?.username || 'someone'}.</div>`;
     else if (m.st === 'pending') act = `<div class="verify-card"><span class="spin" style="border-color:rgba(255,255,255,.15);border-top-color:#fff"></span><div class="ver-t">Verifying cleanup…</div><div style="font-size:12px;color:var(--text-muted)">AI reviewing your photo</div></div>`;
 
