@@ -943,7 +943,7 @@ function _renderLBData(users) {
     return;
   }
   const t3 = users.slice(0, 3), rest = users.slice(3);
-  const rc = ['r2', 'r1', 'r3'], order = [1, 0, 2];
+  const rc = ['r1', 'r2', 'r3'], order = [1, 0, 2];
   const pods = document.getElementById('lb-pods');
   if (pods) pods.innerHTML = order.map(idx => {
     const u = t3[idx]; if (!u) return '';

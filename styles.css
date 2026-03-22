@@ -1250,11 +1250,11 @@ body {
 }
 
 .pod-c.r2 {
-  height: 120px
+  height: 130px
 }
 
 .pod-c.r3 {
-  height: 100px
+  height: 115px
 }
 
 .pod-rk {
@@ -1285,7 +1285,9 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: center
+  text-align: center;
+  flex-shrink: 0;
+  min-height: 14px;
 }
 
 .pod-pt {
@@ -1990,6 +1992,7 @@ body {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   white-space: normal
 }

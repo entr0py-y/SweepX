@@ -308,28 +308,15 @@ async function _uploadProofWithRetry(file, maxRetries = 1) {
 
 /* ─── Leaderboard ─── */
 async function getLeaderboard() {
-  // Fetch all reports where status="completed"
-  const { data, error } = await _sb.from('reports')
-    .select('completed_by')
-    .eq('status', 'completed');
+  // Fetch top 50 users from profiles sorted by points descending
+  const { data, error } = await _sb.from('profiles')
+    .select('username, points')
+    .order('points', { ascending: false })
+    .limit(50);
     
   if (error) throw new Error('Leaderboard unavailable.');
   
-  // Group by completed_by and calculate 10 points per mission
-  const userScores = {};
-  for (const row of (data || [])) {
-    if (row.completed_by) {
-      userScores[row.completed_by] = (userScores[row.completed_by] || 0) + 10;
-    }
-  }
-  
-  // Convert to array and sort descending
-  const lb = Object.entries(userScores).map(([username, points]) => ({
-    username,
-    points
-  })).sort((a, b) => b.points - a.points);
-  
-  return lb;
+  return data || [];
 }
 
 /* ─── Realtime subscriptions ─── */
@@ -354,7 +341,7 @@ function subscribeMission(missionId, onChange) {
 
 function subscribeLeaderboard(onChange) {
   const ch = _sb.channel('leaderboard-live')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, onChange)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, onChange)
     .subscribe();
   _channels['leaderboard-live'] = ch;
   return ch;
