@@ -2451,3 +2451,24 @@ body.map-expanded-open {
 .leaflet-control-attribution {
   display: none !important
 }
+
+/* OVERRIDE: Remove all blobs, grain, grid lines, and pseudo-element gradients */
+.blob, .bg-orb, .grain, .grid-lines, .bg-grain, .global-bg::after, .auth-bg::after, .auth-overlay, .desktop-canvas::before {
+  display: none !important;
+}
+
+/* Force background image across all screens */
+.global-bg, .auth-bg, body {
+  background-image: url("bg.jpg") !important;
+  background-color: #000 !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Make containers transparent so the background shows through */
+.desktop-canvas, .app-shell, .app-inner, .scr {
+  background: transparent !important;
+  box-shadow: none !important;
+}
