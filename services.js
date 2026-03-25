@@ -102,7 +102,7 @@ async function createReport({ imageUrl, description, location, lat, lng, userId 
 async function getMissions(statusFilter) {
   let q = _sb.from('missions')
     .select(`
-      id, status, created_at, points_reward, accepted_by, before_image, after_image,
+      id, status, verification_status, created_at, points_reward, accepted_by, before_image, after_image,
       report:reports(id, image_url, location, description, created_at,
         reporter:profiles(id, username, display_name)),
       acceptor:profiles(id, username, display_name)
@@ -123,7 +123,7 @@ async function getMissions(statusFilter) {
 async function getMissionById(missionId) {
   const { data, error } = await _sb.from('missions')
     .select(`
-      id, status, created_at, points_reward, accepted_by, before_image, after_image,
+      id, status, verification_status, created_at, points_reward, accepted_by, before_image, after_image,
       report:reports(id, image_url, location, description, created_at,
         reporter:profiles(id, username, display_name)),
       acceptor:profiles(id, username, display_name)
@@ -139,7 +139,7 @@ function _normalizeMission(m) {
   const statusMap = { in_progress: 'in-progress' };
   return {
     id: m.id,
-    st: statusMap[m.status] || m.status,
+    st: m.verification_status === 'manual_review' ? 'manual_review' : (statusMap[m.status] || m.status),
     ab: m.accepted_by,
     at: m.created_at,
     ct: m.completed_at || null,

@@ -1,0 +1,27 @@
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const verifyCleanup = require('./api/verify-cleanup.js');
+
+const app = express();
+const port = 49879;
+
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
+// Handle API
+app.post('/api/verify-cleanup', async (req, res) => {
+  try {
+    await verifyCleanup(req, res);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Serve frontend
+app.use(express.static(__dirname));
+
+app.listen(port, () => {
+  console.log(`Local Express server running on http://localhost:${port}`);
+});

@@ -1000,7 +1000,211 @@ body {
 .sc.sc-map { padding: 0 !important; overflow: hidden !important; cursor: default !important; height: 140px; min-height: 140px }
 .sc.sc-map #home-map { width: 100%; height: 100%; border-radius: var(--card-radius); z-index: 0; background: #050505 }
 
+<<<<<<< HEAD
 /* Pulsing user dot */
+=======
+.suc-s {
+  font-size: 14px;
+  color: var(--text-secondary)
+}
+
+/* Form field error messages */
+.ferr {
+  font-size: 12px;
+  color: #FF6B6B;
+  margin-top: 5px;
+  min-height: 16px;
+  line-height: 1.4
+}
+
+/* Char counter */
+.char-c {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px
+}
+
+/* ─── Live Map Tile ─── */
+.sc.sc-map {
+  padding: 0 !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+  height: 140px;
+  min-height: 140px;
+  transition: height .24s ease, min-height .24s ease
+}
+
+.home-map-shell {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  border-radius: 18px;
+  overflow: hidden;
+  transition: height .24s ease;
+  outline: none
+}
+
+.home-map-shell.is-expanded {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 1200;
+  border-radius: 0;
+  background: #080808
+}
+
+.sc.sc-map:has(.home-map-shell.is-expanded) {
+  height: 140px;
+  min-height: 140px
+}
+
+.sc.sc-map.is-expanded {
+  height: 140px;
+  min-height: 140px
+}
+
+.sc.sc-map #home-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  z-index: 0;
+  background: #0E0E0E
+}
+
+.home-map-header {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none
+}
+
+.home-map-icon-wrap {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #34D399;
+  filter: drop-shadow(0 0 8px rgba(52,211,153,.5))
+}
+
+.home-map-icon-wrap svg {
+  width: 17px;
+  height: 17px
+}
+
+.home-map-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.75);
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(6px)
+}
+
+.home-map-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.35);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .2s ease, transform .2s ease, background .2s ease
+}
+
+.home-map-close svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25
+}
+
+.home-map-shell.is-expanded .home-map-close {
+  opacity: 1;
+  transform: translateY(0)
+}
+
+.home-map-close:hover {
+  background: rgba(0,0,0,.55)
+}
+
+.home-map-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #34D399;
+  box-shadow: 0 0 6px #34D399
+}
+
+.home-map-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px;
+  background: linear-gradient(0deg, rgba(8,8,8,.82), rgba(8,8,8,.46) 45%, rgba(8,8,8,0));
+  pointer-events: none
+}
+
+.home-map-location {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: .01em
+}
+
+.home-map-underline {
+  margin-top: 4px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(52,211,153,.55), rgba(52,211,153,.2), transparent)
+}
+
+.home-map-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: rgba(255,255,255,.58);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease
+}
+
+.home-map-shell:hover .home-map-hint,
+.home-map-shell:focus-visible .home-map-hint {
+  opacity: 1
+}
+
+body.map-expanded-open {
+  overflow: hidden
+}
+
+/* ─── Pulsing user location dot ─── */
+>>>>>>> 64994cb44411365f34aa5449ee158f72ee55c96c
 .user-dot-outer {
   width: 18px; height: 18px; border-radius: 50%;
   background: rgba(255,255,255,.12);
@@ -1039,4 +1243,40 @@ body {
    ANIMATIONS — @keyframes spin for loading spinner
    ══════════════════════════════════════════════════════════════ */
 
+<<<<<<< HEAD
 @keyframes spin { to { transform: rotate(360deg) } }
+=======
+.leaflet-popup-tip-container {
+  display: none
+}
+
+.leaflet-popup-close-button {
+  display: none !important
+}
+
+/* Hide attribution */
+.leaflet-control-attribution {
+  display: none !important
+}
+
+/* OVERRIDE: Remove all blobs, grain, grid lines, and pseudo-element gradients */
+.blob, .bg-orb, .grain, .grid-lines, .bg-grain, .global-bg::after, .auth-bg::after, .auth-overlay, .desktop-canvas::before {
+  display: none !important;
+}
+
+/* Force background image across all screens */
+.global-bg, .auth-bg, body {
+  background-image: url("bg.jpg") !important;
+  background-color: #000 !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Make containers transparent so the background shows through */
+.desktop-canvas, .app-shell, .app-inner, .scr {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+>>>>>>> 64994cb44411365f34aa5449ee158f72ee55c96c
