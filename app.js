@@ -1,8 +1,16 @@
+
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+  alert(msg + " at " + lineNo + ":" + columnNo);
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'absolute'; errDiv.style.top = '10%'; errDiv.style.left = '10%'; errDiv.style.right = '10%'; errDiv.style.zIndex = '999999'; errDiv.style.background = 'red'; errDiv.style.color = 'white'; errDiv.style.padding = '20px'; errDiv.style.borderRadius = '10px';
+  errDiv.innerHTML = "<b>JS ERROR:</b> " + msg + "<br>Line: " + lineNo + ":" + columnNo;
+  document.body.appendChild(errDiv);
+};
 /* ── SweepX App — UI + State (Supabase backend) ── */
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function timeAgo(iso) { const d = Date.now() - new Date(iso).getTime(); const s = Math.floor(d / 1000); if (s < 60) return 'Just now'; const m = Math.floor(s / 60); if (m < 60) return m + ' min ago'; const h = Math.floor(m / 60); if (h < 24) return h + ' hr ago'; const dy = Math.floor(h / 24); return dy + ' days ago' }
 function ini(n) { return (n || 'U').split(/[\s_]+/).map(w => w[0]).join('').toUpperCase().slice(0, 1) }
-function acCol() { return '#000000' }
+function acCol() { return 'rgba(124,255,59,0.15)' }
 
 /* ─── State ─── */
 const S = { user: null, screen: 'auth', prev: null, detailId: null };
@@ -198,7 +206,7 @@ function renderAuth() {
   const phone = document.getElementById('phone') || document.getElementById('phone-frame');
   if (phone) phone.classList.add('auth-mode');
   if (!s) return;
-  s.innerHTML = `<div class="auth-bg"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div><div class="grain"></div><div class="grid-lines"></div></div><div class="auth-overlay"></div>
+  s.innerHTML = `<div class="auth-bg"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div><div class="grain"></div><div class="grid-lines"></div></div>
     <div class="auth-content"><div class="auth-body" id="auth-body">${_authEntryBody()}</div><div class="auth-home-bar"></div></div>`;
   s.style.display = 'block'; s.classList.add('active', 'screen-enter');
 }
@@ -268,10 +276,10 @@ async function doEnter() {
 function renderHome() {
   const u = S.user || {}, s = document.getElementById('s-home');
   s.innerHTML = `
-<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${acCol()};border:1.5px solid var(--border-color)">${ini(u.username)}</div><div class="hdr-g"><span>Ready to sweep!</span><span>${u.username || ''}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.help}</div><div class="icon-btn" style="position:relative">${I.bell}<span class="notif-dot"></span></div></div></div>
-<div class="srch">${I.search}<input placeholder="Search missions, locations..." readonly/><button class="srch-f">${I.sliders}</button></div>
+<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px;background:${acCol()};border:2px solid var(--accent)">${ini(u.username)}</div><div class="hdr-g"><span>Hello!</span><span>${u.username || ''}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.help}</div><div class="icon-btn" style="position:relative">${I.bell}<span class="notif-dot"></span></div></div></div>
+<div class="loc-bar" id="home-loc-bar"><span class="loc-bar-icon">${I.pin}</span><span class="loc-bar-text" id="home-loc-text">Locating…</span></div>
 <div class="sg">
-<div class="sc ft"><div class="sc-top"><div class="sc-ico">${I.pin}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Reports</div><div class="sc-val" id="sc-reports">–</div></div></div>
+<div class="sc"><div class="sc-top"><div class="sc-ico">${I.pin}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Reports</div><div class="sc-val" id="sc-reports">–</div></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions Done</div><div class="sc-val" id="sc-missions">–</div></div></div>
 <div class="sc sc-map" id="sc-map-tile" style="cursor:default;overflow:hidden;padding:0"><div id="home-map" style="width:100%;height:100%;border-radius:inherit"></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.star}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Your Rank</div><div class="sc-val" id="sc-rank">–</div></div></div>
@@ -284,7 +292,25 @@ function renderHome() {
 
   // Async load
   _loadHome();
+  _fillLocation();
 }
+
+function _fillLocation() {
+  var el = document.getElementById('home-loc-text');
+  if (!el) return;
+  if (!navigator.geolocation) { el.textContent = 'Location unavailable'; return; }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    fetch('https://nominatim.openstreetmap.org/reverse?lat=' + pos.coords.latitude + '&lon=' + pos.coords.longitude + '&format=json&addressdetails=1&zoom=18')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var a = d.address || {};
+        var parts = [a.road || a.pedestrian || a.neighbourhood || '', a.suburb || a.city_district || '', a.city || a.town || a.village || ''].filter(Boolean);
+        el.textContent = 'You are at ' + (parts.slice(0, 2).join(', ') || d.display_name || 'Unknown');
+      })
+      .catch(function() { el.textContent = 'Location unavailable'; });
+  }, function() { el.textContent = 'Location unavailable'; }, { enableHighAccuracy: true, timeout: 8000 });
+}
+
 
 async function _loadHome() {
   try {
@@ -964,8 +990,8 @@ let _profMs = [];
 function renderProfile() {
   const u = S.user || {}, s = document.getElementById('s-profile');
   s.innerHTML = `
-<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${acCol()};border:2px dashed var(--accent)">${ini(u.username)}</div><div class="hdr-g"><span>${u.username || ''}</span><span>@${(u.username || '').toLowerCase()}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.cog}</div><div class="icon-btn" onclick="doLogout()">${I.logout}</div></div></div>
-<div class="prof-hd"><div class="avatar" style="width:72px;height:72px;font-size:24px;background:${acCol()};border:2px dashed var(--accent)">${ini(u.username)}</div><div class="prof-nm">${u.username || ''}</div><div class="prof-h">@${(u.username || '').toLowerCase()}</div></div>
+<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px;background:${acCol()};border:2px solid var(--accent);box-shadow:0 0 12px var(--accent-glow)">${ini(u.username)}</div><div class="hdr-g"><span>${u.username || ''}</span><span>@${(u.username || '').toLowerCase()}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.cog}</div><div class="icon-btn" onclick="doLogout()">${I.logout}</div></div></div>
+<div class="prof-hd"><div class="avatar" style="width:72px;height:72px;font-size:24px;background:${acCol()};border:2px solid var(--accent);box-shadow:0 0 20px var(--accent-glow)">${ini(u.username)}</div><div class="prof-nm">${u.username || ''}</div><div class="prof-h">@${(u.username || '').toLowerCase()}</div></div>
 <div class="sg">
 <div class="sc ft"><div class="sc-top"><div class="sc-ico">${I.star}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Points</div><div class="sc-val" id="pf-pts">–</div></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions</div><div class="sc-val" id="pf-mc">–</div></div></div>
@@ -1040,3 +1066,22 @@ async function boot() {
 }
 
 boot();
+
+/* ═══════════════════════════════════════════
+   ETHEREAL SHADOW ANIMATION
+═══════════════════════════════════════════ */
+(function() {
+  const hueMatrix = document.getElementById('etheral-hue');
+  if (!hueMatrix) return;
+  const animDuration = 5850; 
+  let start;
+  function step(timestamp) {
+    if (start === undefined) start = timestamp;
+    const elapsed = timestamp - start;
+    const progress = (elapsed % animDuration) / animDuration;
+    const hue = progress * 360;
+    hueMatrix.setAttribute('values', hue.toString());
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
