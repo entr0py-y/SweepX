@@ -935,7 +935,8 @@ async function _loadDetail(mId) {
     else if (m.st === 'in-progress' || m.st === 'in_progress') act = `<div style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Being cleaned by ${m.acceptor?.username || 'someone'}.</div>`;
     else if (m.st === 'pending') act = `<div class="verify-card"><span class="spin" style="border-color:rgba(255,255,255,.15);border-top-color:#fff"></span><div class="ver-t">Verifying cleanup…</div><div style="font-size:12px;color:var(--text-muted)">AI reviewing your photo</div></div>`;
 
-    s.innerHTML = `<div class="scr-hd"><button class="back-btn" onclick="go('${S.prev || 'missions'}')">${I.back}</button><span class="scr-hd-t">Mission Detail</span><div style="margin-left:auto">${badge(m.st)}</div></div>
+    const delBtn = isMine ? `<button class="icon-btn" style="margin-right:8px;color:rgba(255,100,100,0.8)" onclick="doDelete('${m.id}')">${I.trash}</button>` : '';
+    s.innerHTML = `<div class="scr-hd"><button class="back-btn" onclick="go('${S.prev || 'missions'}')">${I.back}</button><span class="scr-hd-t">Mission Detail</span><div style="margin-left:auto;display:flex;align-items:center">${delBtn}${badge(m.st)}</div></div>
 <div class="det-hero">${img}</div>
 ${beforeAfterHtml}
 <div class="det-card"><div class="det-loc">${m.rpt?.loc || 'Unknown'}</div><div class="det-rep"><div class="avatar" style="width:24px;height:24px;font-size:9px;background:${acCol()}">${ini(m.creator?.username || 'U')}</div><span style="font-size:13px;color:var(--text-secondary);flex:1">${m.creator?.username || 'Anon'}</span><span style="font-size:11px;color:var(--text-muted)">${timeAgo(m.at)}</span></div>${m.rpt?.desc ? `<div class="det-desc">${m.rpt.desc}</div>` : ''}</div>
@@ -1153,6 +1154,43 @@ function pFilt(el, f) {
 }
 
 function doLogout() { clearSession(); go('auth') }
+
+function doDelete(mId) {
+  // Build a custom confirmation modal (avoids blocking native dialogs)
+  const overlay = document.createElement('div');
+  overlay.id = 'del-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div style="background:#1A1A1A;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px;max-width:320px;width:100%;text-align:center">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">${I.trash}</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Delete Quest?</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">This will permanently remove the quest and its report. This cannot be undone.</div>
+      <div style="display:flex;gap:10px">
+        <button id="del-cancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:var(--text-primary);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+        <button id="del-confirm" style="flex:1;padding:12px;border-radius:12px;border:none;background:#FF4D4D;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  document.getElementById('del-cancel').onclick = close;
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  document.getElementById('del-confirm').onclick = async () => {
+    const confirmBtn = document.getElementById('del-confirm');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Deleting…'; }
+    try {
+      await deleteMission(mId, S.user.id);
+      close();
+      if (typeof showToast !== 'undefined') showToast({ type: 'success', title: 'Quest Deleted', subtitle: 'Removed from everywhere.' });
+      go('home');
+    } catch (e) {
+      close();
+      if (typeof showToast !== 'undefined') showToast({ type: 'error', title: 'Delete Failed', subtitle: e.message });
+      else alert(e.message);
+    }
+  };
+}
 
 /* ═══════════════════════════════════════════
    BOOT

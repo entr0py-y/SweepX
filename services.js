@@ -319,6 +319,28 @@ async function getLeaderboard() {
   return data || [];
 }
 
+async function deleteMission(missionId, userId) {
+  // 1. Get mission to find report_id and verify ownership
+  const { data: mission, error: fErr } = await _sb.from('missions')
+    .select('id, report_id, report:reports(user_id)')
+    .eq('id', missionId).single();
+
+  if (fErr || !mission) throw new Error('Mission not found.');
+
+  // Verify ownership
+  if (mission.report?.user_id !== userId) {
+    throw new Error('Unauthorized: Only the uploader can delete this quest.');
+  }
+
+  // 2. Delete the mission FIRST (removes the FK reference to the report)
+  const { error: mErr } = await _sb.from('missions').delete().eq('id', missionId);
+  if (mErr) throw new Error("Couldn't delete quest: " + mErr.message);
+
+  // 3. Now delete the report (no longer referenced by any mission)
+  const { error: dErr } = await _sb.from('reports').delete().eq('id', mission.report_id);
+  if (dErr) throw new Error("Couldn't delete report: " + dErr.message);
+}
+
 /* ─── Realtime subscriptions ─── */
 let _channels = {};
 
