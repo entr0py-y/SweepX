@@ -85,7 +85,7 @@ body {
 /* ── App inner ── */
 .app-inner {
   width: 100%;
-  height: calc(100% - 88px); /* room for floating nav */
+  height: 100%; /* Content flows behind floating nav */
   position: relative;
   overflow-y: auto; overflow-x: hidden;
   scroll-behavior: smooth;
@@ -113,7 +113,7 @@ body {
   }
   .app-shell::before { display: none }
   .status-bar { display: none }
-  .app-inner { height: calc(100% - 88px) }
+  .app-inner { height: 100% }
   .app-shell.auth-mode .app-inner { height: 100% }
 }
 @media (max-width: 768px) and (orientation: landscape) { .app-shell { height: 100dvh } }
@@ -132,7 +132,7 @@ body {
 .sb-icons svg { width: 16px; height: 16px; fill: currentColor }
 
 #screen-area {
-  height: calc(844px - 44px - 88px);
+  height: 100%;
   overflow-y: auto; overflow-x: hidden;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
@@ -338,20 +338,44 @@ body {
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
 
 /* Primary button */
-.btn-p {
-  height: 52px; width: 100%;
-  border-radius: 26px;
-  background: var(--accent);
-  color: #000;
-  font-size: 15px; font-weight: 700;
-  border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: transform 80ms ease, opacity 80ms ease;
-  font-family: inherit;
-  letter-spacing: -0.02em;
-}
-.btn-p:active { transform: scale(.97); opacity: .88 }
 .btn-p:disabled { opacity: .35; cursor: not-allowed }
+
+/* Minimal Accept Pill */
+.btn-accept-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #B4FF00;
+  color: #000;
+  border-radius: 30px;
+  padding: 14px 24px;
+  font-weight: 800;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  box-shadow: 0 4px 15px rgba(180, 255, 0, 0.3);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.btn-accept-pill:active { transform: scale(0.96); }
+.btn-accept-pill .chk-circ {
+  width: 24px;
+  height: 24px;
+  background: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-accept-pill .chk-circ svg {
+  width: 14px;
+  height: 14px;
+  stroke: #B4FF00;
+  stroke-width: 3.5;
+}
 
 /* Secondary button */
 .btn-s {
@@ -1000,9 +1024,6 @@ body {
 .sc.sc-map { padding: 0 !important; overflow: hidden !important; cursor: default !important; height: 140px; min-height: 140px }
 .sc.sc-map #home-map { width: 100%; height: 100%; border-radius: var(--card-radius); z-index: 0; background: #050505 }
 
-<<<<<<< HEAD
-/* Pulsing user dot */
-=======
 .suc-s {
   font-size: 14px;
   color: var(--text-secondary)
@@ -1015,14 +1036,6 @@ body {
   margin-top: 5px;
   min-height: 16px;
   line-height: 1.4
-}
-
-/* Char counter */
-.char-c {
-  text-align: right;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px
 }
 
 /* ─── Live Map Tile ─── */
@@ -1073,6 +1086,25 @@ body {
   background: #0E0E0E
 }
 
+.home-map-shell #home-map {
+  pointer-events: none;
+}
+.home-map-shell.is-expanded #home-map {
+  pointer-events: auto;
+}
+.home-map-shell.is-expanded {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  background: #000;
+}
+.home-map-shell.is-expanded .sc-top {
+  display: none !important;
+}
 .home-map-header {
   position: absolute;
   top: 12px;
@@ -1181,6 +1213,18 @@ body {
   background: linear-gradient(90deg, rgba(52,211,153,.55), rgba(52,211,153,.2), transparent)
 }
 
+.home-map-click-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: pointer;
+  background: transparent;
+  pointer-events: auto;
+}
+.home-map-shell.is-expanded .home-map-click-overlay {
+  display: none;
+}
+
 .home-map-hint {
   position: absolute;
   left: 50%;
@@ -1202,9 +1246,6 @@ body {
 body.map-expanded-open {
   overflow: hidden
 }
-
-/* ─── Pulsing user location dot ─── */
->>>>>>> 64994cb44411365f34aa5449ee158f72ee55c96c
 .user-dot-outer {
   width: 18px; height: 18px; border-radius: 50%;
   background: rgba(255,255,255,.12);
@@ -1243,23 +1284,16 @@ body.map-expanded-open {
    ANIMATIONS — @keyframes spin for loading spinner
    ══════════════════════════════════════════════════════════════ */
 
-<<<<<<< HEAD
 @keyframes spin { to { transform: rotate(360deg) } }
-=======
-.leaflet-popup-tip-container {
-  display: none
-}
 
-.leaflet-popup-close-button {
-  display: none !important
-}
-
-/* Hide attribution */
+/* Hide attribution and popup tips */
+.leaflet-popup-tip-container,
+.leaflet-popup-close-button,
 .leaflet-control-attribution {
-  display: none !important
+  display: none !important;
 }
 
-/* OVERRIDE: Remove all blobs, grain, grid lines, and pseudo-element gradients */
+/* OVERRIDE: Remove all unnecessary overlays */
 .blob, .bg-orb, .grain, .grid-lines, .bg-grain, .global-bg::after, .auth-bg::after, .auth-overlay, .desktop-canvas::before {
   display: none !important;
 }
@@ -1279,4 +1313,3 @@ body.map-expanded-open {
   background: transparent !important;
   box-shadow: none !important;
 }
->>>>>>> 64994cb44411365f34aa5449ee158f72ee55c96c

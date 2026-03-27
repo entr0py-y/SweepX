@@ -283,10 +283,15 @@ function renderHome() {
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions Done</div><div class="sc-val" id="sc-missions">–</div></div></div>
 <div class="sc sc-map" id="sc-map-tile" style="cursor:pointer;overflow:hidden;padding:0">
   <div class="home-map-shell" id="home-map-shell" role="button" aria-expanded="false" tabindex="0">
+    <div class="sc-top" style="position:absolute;top:12px;left:12px;right:12px;z-index:2;pointer-events:none;padding:0">
+      <div class="sc-ico" style="background:rgba(0,0,0,.3);backdrop-filter:blur(4px)">${I.pin}</div>
+      <div class="sc-arr" style="background:rgba(0,0,0,.3);backdrop-filter:blur(4px);opacity:1">${I.arr}</div>
+    </div>
     <div class="home-map-header">
-      <button class="home-map-close" id="home-map-close" aria-label="Close map" title="Close map">${I.xx}</button>
+      <button class="home-map-close" id="home-map-close" aria-label="Close map" title="Close map" style="z-index:10">${I.xx}</button>
     </div>
     <div id="home-map" style="width:100%;height:100%;border-radius:inherit"></div>
+    <div class="home-map-click-overlay" id="home-map-click-overlay"></div>
     <div class="home-map-hint" id="home-map-hint">Click to expand</div>
   </div>
 </div>
@@ -297,6 +302,13 @@ function renderHome() {
 <div class="ml" id="missions-feed">${[1,2,3].map(skelRow).join('')}</div>
 <div style="height:24px"></div>`;
   s.style.display = 'block'; s.classList.add('active');
+
+  // Reset map expansion state
+  _homeMapExpanded = false;
+  document.body.classList.remove('map-expanded-open');
+
+  // Bind map tile interaction BEFORE async load so clicks work immediately
+  _bindHomeMapTileInteractions();
 
   // Async load
   _loadHome();
@@ -411,14 +423,21 @@ function _initHomeMap(reports) {
       zoom: DEFAULT_ZOOM,
       zoomControl: false,
       attributionControl: false,
-      dragging: true,
+      dragging: false,
       scrollWheelZoom: false,
-      tap: true,
-      touchZoom: true,
+      tap: false,
+      touchZoom: false,
       doubleClickZoom: false
     });
 
     _homeMap = map;
+
+    // Click on map when collapsed => expand
+    map.on('click', function() {
+      if (!_homeMapExpanded) {
+        _expandHomeMap();
+      }
+    });
 
     // ── Dark tile: CartoDB DarkMatter, no API key ──
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -530,9 +549,14 @@ function _setHomeMapMeta(lat, lng) {
   }
 }
 
+// Global expand/collapse function so Leaflet click can access it
+let _expandHomeMap = null;
+
 function _bindHomeMapTileInteractions() {
   const tile = document.getElementById('home-map-shell');
   if (!tile || tile.dataset.bound === '1') return;
+
+  const overlay = document.getElementById('home-map-click-overlay');
 
   const setExpanded = expanded => {
     _homeMapExpanded = expanded;
@@ -541,28 +565,38 @@ function _bindHomeMapTileInteractions() {
     if (tileWrap) tileWrap.classList.toggle('is-expanded', expanded);
     tile.classList.toggle('is-expanded', expanded);
     tile.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (overlay) overlay.style.display = expanded ? 'none' : 'block';
     const hint = document.getElementById('home-map-hint');
     if (hint) hint.textContent = expanded ? 'Tap × to close' : 'Click to expand';
-    if (_homeMap) setTimeout(() => _homeMap.invalidateSize(), expanded ? 260 : 220);
+    // Toggle Leaflet interactivity based on expanded state
+    if (_homeMap) {
+      const mapEl = document.getElementById('home-map');
+      if (expanded) {
+        _homeMap.dragging.enable();
+        _homeMap.touchZoom.enable();
+        _homeMap.scrollWheelZoom.enable();
+        if (mapEl) mapEl.style.pointerEvents = 'auto';
+      } else {
+        _homeMap.dragging.disable();
+        _homeMap.touchZoom.disable();
+        _homeMap.scrollWheelZoom.disable();
+        if (mapEl) mapEl.style.pointerEvents = 'none';
+      }
+      setTimeout(() => _homeMap.invalidateSize(), expanded ? 260 : 220);
+    }
   };
 
-  const toggle = () => {
-    _homeMapExpanded = !_homeMapExpanded;
-    setExpanded(_homeMapExpanded);
-  };
+  // Expose expand function for Leaflet click handler
+  _expandHomeMap = () => setExpanded(true);
 
-  tile.addEventListener('click', e => {
-    const closeBtn = document.getElementById('home-map-close');
-    if (closeBtn && (e.target === closeBtn || closeBtn.contains(e.target))) {
+  // Overlay click (for period before Leaflet initializes)
+  if (overlay) {
+    overlay.addEventListener('click', e => {
       e.preventDefault();
-      setExpanded(false);
-      return;
-    }
-
-    if (!_homeMapExpanded) {
-      toggle();
-    }
-  });
+      e.stopPropagation();
+      if (!_homeMapExpanded) setExpanded(true);
+    });
+  }
 
   const closeBtn = document.getElementById('home-map-close');
   if (closeBtn) {
@@ -582,7 +616,8 @@ function _bindHomeMapTileInteractions() {
   tile.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      toggle();
+      if (!_homeMapExpanded) setExpanded(true);
+      else setExpanded(false);
     }
   });
   tile.dataset.bound = '1';
@@ -926,7 +961,18 @@ async function _loadDetail(mId) {
          </div>` : '';
 
     let act = '';
-    if (m.st === 'open' && !isMine) act = `<div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;margin-bottom:8px">${I.trphy} +${m.points_reward || 150} pts on completion</div><button class="btn-p" id="acbtn" onclick="accM('${m.id}')">${I.ok} Accept Mission</button>`;
+    if (m.st === 'open' && !isMine) {
+      act = `
+        <div style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;margin-bottom:12px">
+          ${I.trphy} +${m.points_reward || 150} pts on completion
+        </div>
+        <button class="btn-accept-pill" id="acbtn" onclick="accM('${m.id}')">
+          <div class="chk-circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          Accept Mission
+        </button>
+        <div id="acc-err" style="color:#FF4D4D;font-size:12px;margin-top:8px;text-align:center;display:none"></div>
+      `;
+    }
     else if (m.st === 'open' && isMine) act = '<div style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Waiting for a volunteer.</div>';
     else if ((m.st === 'in-progress' || m.st === 'in_progress') && isMe) act = proofHTML(m.id);
     else if (m.st === 'approved') act = `<div class="res-card ok"><div class="res-ico ok">${I.ok}</div><div class="res-t ok">Cleanup Verified!</div><div class="pts-pop">+${m.points_reward || 150} pts</div><div class="res-s">Points awarded.</div></div>`;
@@ -996,20 +1042,67 @@ function _handleProofCamera(blob, dataUrl) {
 function hPrf(inp, mId) { /* no-op — wired via event listener now */ }
 
 async function accM(mId) {
-  const btn = document.getElementById('acbtn'); btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Accepting…`;
+  const btn = document.getElementById('acbtn');
+  const errEl = document.getElementById('acc-err');
+  if (errEl) errEl.style.display = 'none';
+
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="spin"></span> Checking proximity…`;
+
   try {
+    const m = await getMissionById(mId);
+    if (!m || !m.rpt) throw new Error("Mission not found");
+
+    // Proximity Check (100m)
+    const userPos = await new Promise((res, rej) => {
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 });
+    });
+
+    const dist = _getDistance(
+      userPos.coords.latitude, userPos.coords.longitude,
+      m.rpt.lat, m.rpt.lng
+    );
+
+    if (dist > 0.1) { // 0.1 km = 100m
+      throw new Error(`Too far away! You must be within 100m to accept this mission. (Currently ~${Math.round(dist * 1000)}m away)`);
+    }
+
+    btn.innerHTML = `<span class="spin"></span> Accepting…`;
     await acceptMission(mId, S.user.id);
-    btn.innerHTML = `<span style="color:var(--accent)">${I.ok} Accepted ✓</span>`;
+    btn.innerHTML = `<div class="chk-circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Accepted ✓`;
+    btn.style.background = 'rgba(180, 255, 0, 0.4)';
+
     setTimeout(() => {
       const area = document.getElementById('parea');
-      if (area) { area.innerHTML = proofHTML(mId); area.style.opacity = '0'; requestAnimationFrame(() => { area.style.transition = 'opacity .2s'; area.style.opacity = '1' }) }
-      _wirePrfInput(mId);
+      if (area) {
+        area.innerHTML = proofHTML(mId);
+        area.style.opacity = '0';
+        requestAnimationFrame(() => {
+          area.style.transition = 'opacity .2s';
+          area.style.opacity = '1'
+        });
+      }
     }, 400);
   } catch (e) {
-    btn.disabled = false; btn.innerHTML = I.ok + ' Accept Mission';
-    const pe = document.getElementById('pe');
-    if (pe) pe.textContent = 'This mission was just claimed by someone else.';
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (errEl) {
+      errEl.textContent = e.message || 'Failed to accept mission.';
+      errEl.style.display = 'block';
+    }
   }
+}
+
+function _getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 function _setPProof(pct) {
