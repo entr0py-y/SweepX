@@ -226,18 +226,20 @@ function renderAuth() {
     }
     .cine-video {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; z-index: -10;
+      object-fit: contain; z-index: -10;
+      transform: scale(2.2);
+      filter: brightness(0.45);
       /* Bulletproof fallback if /earth.mp4 is missing or blocked */
-      background: #000 url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat;
+      background: #000 url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop') center/contain no-repeat;
     }
     .cine-overlay-gradient { 
       position: absolute; inset: 0; 
-      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 40%, rgba(0,0,0,0.85) 100%); 
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.9) 100%); 
       z-index: -9; pointer-events: none; 
     }
     .cine-overlay-glow { 
       position: absolute; inset: 0; 
-      background: radial-gradient(circle at center 60%, rgba(30,80,255,0.12) 0%, transparent 70%); 
+      background: radial-gradient(circle at center 60%, rgba(30,80,255,0.18) 0%, transparent 70%); 
       z-index: -8; pointer-events: none; 
     }
 
