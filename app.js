@@ -206,36 +206,107 @@ function renderAuth() {
   const phone = document.getElementById('phone') || document.getElementById('phone-frame');
   if (phone) phone.classList.add('auth-mode');
   if (!s) return;
-  s.innerHTML = `<div class="auth-bg"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div><div class="grain"></div><div class="grid-lines"></div></div>
-    <div class="auth-content"><div class="auth-body" id="auth-body">${_authEntryBody()}</div><div class="auth-home-bar"></div></div>`;
+  s.innerHTML = `
+  <style>
+    /* Break out of desktop phone shell for cinematic full screen */
+    body:has(#s-auth.active) .app-shell {
+      width: 100vw !important; height: 100vh !important; height: 100dvh !important;
+      border-radius: 0 !important; box-shadow: none !important; margin: 0 !important;
+      background: #000 !important; /* Force black background behind video */
+    }
+    body:has(#s-auth.active) .desktop-canvas::before { display: none !important; }
+    
+    /* Hide the wavy grey global background so it doesn't bleed through or cover the earth */
+    body:has(#s-auth.active) .global-bg { display: none !important; }
+    
+    .cinematic-auth {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; overflow: hidden;
+      font-family: inherit; z-index: 10;
+    }
+    .cine-video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: -10;
+      /* Bulletproof fallback if /earth.mp4 is missing or blocked */
+      background: #000 url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat;
+    }
+    .cine-overlay-gradient { 
+      position: absolute; inset: 0; 
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 40%, rgba(0,0,0,0.85) 100%); 
+      z-index: -9; pointer-events: none; 
+    }
+    .cine-overlay-glow { 
+      position: absolute; inset: 0; 
+      background: radial-gradient(circle at center 60%, rgba(30,80,255,0.12) 0%, transparent 70%); 
+      z-index: -8; pointer-events: none; 
+    }
+
+    .cine-content {
+      position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 0 32px; 
+      animation: cineFadeIn 1.5s ease-out forwards;
+    }
+    @keyframes cineFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .cine-mission-lbl { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #7CFF3B; font-weight: 600; margin-bottom: 16px; opacity: 0.9; }
+    .cine-title { font-size: 42px; font-weight: 800; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.04em; color: #fff; margin-bottom: 16px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .cine-sub { font-size: 14px; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.8); }
+
+    .cine-form { margin-top: 60px; display: flex; flex-direction: column; gap: 28px; margin-bottom: 20px; }
+    .cine-input-wrap { position: relative; }
+    .cine-input { 
+      width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.3); 
+      color: #ffffff; font-size: 16px; padding: 12px 0; outline: none; transition: all 0.3s ease;
+      font-weight: 500; font-family: inherit;
+    }
+    .cine-input::placeholder { color: rgba(255,255,255,0.5); font-weight: 400; font-size: 14px; }
+    .cine-input:focus { border-bottom-color: #7CFF3B; text-shadow: 0 0 12px rgba(124,255,59,0.4); box-shadow: 0 8px 12px -10px rgba(124,255,59,0.5); }
+    
+    .af-err { position: absolute; bottom: -18px; left: 0; font-size: 10px; color: #FF4D6D; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .auth-global-err { margin-top: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px; border-radius: 8px; text-align: center; color: #FF4D6D; background: transparent; border: 1px solid rgba(255,77,109,0.3); display: none; }
+    .auth-global-err.show { display: block; }
+
+    .cine-btn { 
+      width: 100%; border-radius: 40px; background: #7CFF3B; color: #000; font-size: 15px; font-weight: 800; 
+      padding: 18px 24px; border: none; text-transform: uppercase; letter-spacing: 0.12em;
+      box-shadow: 0 0 24px rgba(124, 255, 59, 0.25); cursor: pointer; transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+      display: flex; align-items: center; justify-content: center; margin-top: 10px;
+    }
+    .cine-btn:active:not(:disabled) { transform: scale(0.96); box-shadow: 0 0 12px rgba(124, 255, 59, 0.5); }
+    .cine-btn:disabled { opacity: 0.4; cursor: not-allowed; animation: none; transform: none; box-shadow: none; pointer-events: none; }
+  </style>
+
+  <div class="cinematic-auth">
+    <video autoplay loop muted playsinline class="cine-video" poster="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop">
+      <source src="/earth.mp4" type="video/mp4" />
+    </video>
+    <div class="cine-overlay-gradient"></div>
+    <div class="cine-overlay-glow"></div>
+
+    <div class="cine-content">
+      <div class="cine-mission-lbl">01 — GLOBAL MISSION</div>
+      <div class="cine-title">RESTORE<br/>THE WORLD</div>
+      <div class="cine-sub">Cities are drowning in waste.<br/>Take action. Clean real locations.</div>
+
+      <div class="cine-form">
+        <div class="auth-global-err" id="aerr"></div>
+        
+        <div class="cine-input-wrap" id="af-u">
+          <input class="cine-input" id="f-u" placeholder="Designation (Username)" autocomplete="username" maxlength="20" oninput="afClear('af-u','ae-u')"/>
+          <div class="af-err" id="ae-u"></div>
+        </div>
+
+        <button class="cine-btn" id="abtn" onclick="doEnter()">ENTER THE WORLD</button>
+      </div>
+    </div>
+  </div>`;
   s.style.display = 'block'; s.classList.add('active', 'screen-enter');
 }
 
-function _authSBHtml() {
-  return `<div class="auth-sb">
-    <span id="sb-time-auth" style="font-size:15px;font-weight:600"></span>
-    <div style="display:flex;gap:5px;align-items:center">
-      <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M2 16.2C2 10.3 6.8 5.5 12.7 5.5c1.7 0 3.3.4 4.8 1.1"/><path d="M6.7 19.5c1.4-1.4 3.4-2.3 5.6-2.3s4.2.9 5.6 2.3"/><path d="M4.3 17c2-2 4.7-3.2 7.7-3.2s5.7 1.2 7.7 3.2"/><circle cx="12.3" cy="22" r="1"/></svg>
-      <svg viewBox="0 0 28 14" style="width:20px;height:10px;fill:#fff"><rect x="0" y="0" width="24" height="14" rx="3" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="25" y="4" width="2" height="6" rx="1" fill="#fff" opacity=".4"/><rect x="2" y="2" width="18" height="10" rx="1.5" fill="#fff"/></svg>
-    </div>
-  </div>`;
-}
+function _authSBHtml() { return ''; }
 
-function _authEntryBody() {
-  return `<div class="auth-scroll">
-    <div class="auth-main">
-      <div class="auth-hl"><h1>Start sweeping.<br>Make a change.</h1></div>
-      <div class="auth-form-wrap">
-        <div class="af" id="af-u"><input id="f-u" placeholder="Choose a username" autocomplete="username" maxlength="20" oninput="afClear('af-u','ae-u')"/><div class="af-err" id="ae-u"></div></div>
-      </div>
-      <div class="auth-global-err" id="aerr"></div>
-      <div class="auth-btns">
-        <button class="auth-btn-primary" id="abtn" onclick="doEnter()">Start Sweeping</button>
-      </div>
-    </div>
-    <div class="auth-footer"><span class="auth-footer-text">Your progress is saved by username.</span></div>
-  </div>`;
-}
+function _authEntryBody() { return ''; }
 
 function afClear(wId, eId) {
   const w = document.getElementById(wId), e = document.getElementById(eId);

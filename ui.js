@@ -191,34 +191,130 @@ function missionRowHTML(m) {
 
 /* ─── Auth Screen ─── */
 function authHTML() {
-  return `<div class="auth-wrap">
-    <div class="auth-logo">Sweep<span class="x">X</span></div>
-    <div class="auth-tag">Clean it. Earn it.</div>
-    <div class="auth-tabs">
-      <button class="auth-tab on" id="tab-login" onclick="switchTab('login')">Login</button>
-      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+  return `
+  <style>
+    /* Break out of desktop phone shell for cinematic full screen */
+    body:has(#s-auth.active) .app-shell {
+      width: 100vw !important; height: 100vh !important; height: 100dvh !important;
+      border-radius: 0 !important; box-shadow: none !important;
+    }
+    body:has(#s-auth.active) .desktop-canvas::before { display: none !important; }
+    
+    /* Cinematic Overlays & Video */
+    .cinematic-auth {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; overflow: hidden;
+      font-family: inherit; z-index: 10;
+    }
+    .cine-video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: -10;
+      filter: blur(4px) brightness(0.6);
+      transform: scale(1.05); /* Prevent blur edges from showing background */
+    }
+    .cine-overlay-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.95) 100%); z-index: -9; pointer-events: none; }
+    .cine-overlay-glow { position: absolute; inset: 0; background: radial-gradient(circle at center 30%, rgba(30,80,255,0.18) 0%, transparent 65%); z-index: -8; pointer-events: none; }
+    .cine-overlay-vignette { position: absolute; inset: 0; background: radial-gradient(circle, transparent 45%, #000 120%); z-index: -7; pointer-events: none; }
+    
+    /* Giant BG Text */
+    .cine-bg-text-wrap { position: absolute; inset: 0; z-index: -6; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; opacity: 0.04; filter: blur(4px); transform: scale(1.3); }
+    .cine-bg-word { font-size: 12rem; font-weight: 900; line-height: 0.85; text-transform: uppercase; color: #fff; margin: -10px 0; }
+
+    /* Content Layout */
+    .cine-content {
+      position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column;
+      padding: env(safe-area-inset-top, 60px) 32px env(safe-area-inset-bottom, 40px); 
+      animation: cineFadeIn 1.5s ease-out forwards;
+    }
+    @keyframes cineFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Mission Typography */
+    .cine-mission-lbl { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #7CFF3B; font-weight: 600; margin-bottom: 24px; opacity: 0.9; }
+    .cine-title { font-size: 42px; font-weight: 800; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.04em; color: #fff; margin-bottom: 20px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .cine-sub { font-size: 14px; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.08em; max-width: 290px; }
+
+    /* Form Area */
+    .cine-form { margin-top: auto; display: flex; flex-direction: column; gap: 28px; margin-bottom: 10px; }
+    .cine-input-wrap { position: relative; }
+    .cine-input { 
+      width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.15); 
+      color: #ffffff; font-size: 16px; padding: 12px 0; outline: none; transition: all 0.3s ease;
+      font-weight: 500; font-family: inherit;
+    }
+    .cine-input::placeholder { color: rgba(255,255,255,0.25); font-weight: 400; text-transform: uppercase; font-size: 12px; letter-spacing: 0.15em; }
+    .cine-input:focus { border-bottom-color: #7CFF3B; text-shadow: 0 0 12px rgba(124,255,59,0.4); box-shadow: 0 8px 12px -10px rgba(124,255,59,0.5); }
+    
+    /* Ensure old err styling doesn't break UI */
+    .field-err { position: absolute; bottom: -18px; left: 0; font-size: 10px; color: #FF4D6D; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Auth Err */
+    #auth-err.cinematic { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--accent-red); margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px; border-radius: 8px; text-align: center; }
+
+    /* Bottom Pill Button */
+    .cine-btn { 
+      width: 100%; border-radius: 40px; background: #7CFF3B; color: #000; font-size: 15px; font-weight: 800; 
+      padding: 18px 24px; border: none; text-transform: uppercase; letter-spacing: 0.12em;
+      box-shadow: 0 0 24px rgba(124, 255, 59, 0.25); cursor: pointer; transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+      display: flex; align-items: center; justify-content: center; margin-top: 10px;
+    }
+    .cine-btn:active:not(:disabled) { transform: scale(0.96); box-shadow: 0 0 12px rgba(124, 255, 59, 0.5); }
+    .cine-btn:disabled { opacity: 0.4; cursor: not-allowed; animation: none; transform: none; box-shadow: none; pointer-events: none; }
+
+    /* Small switch tab */
+    .cine-switch { text-align: center; color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 24px; cursor: pointer; position: relative; z-index: 10; transition: color 0.2s ease; font-weight: 500; display: inline-block; align-self: center; }
+    .cine-switch:active { color: #fff; }
+  </style>
+
+  <div class="cinematic-auth">
+    <!-- 1. FULLSCREEN VIDEO BACKGROUND -->
+    <video autoplay loop muted playsinline class="cine-video">
+      <source src="https://assets.mixkit.co/videos/preview/mixkit-earth-rotating-in-space-from-above-41589-large.mp4" type="video/mp4" />
+    </video>
+
+    <!-- 3. CINEMATIC OVERLAYS -->
+    <div class="cine-overlay-gradient"></div>
+    <div class="cine-overlay-glow"></div>
+    <div class="cine-overlay-vignette"></div>
+
+    <!-- 6. BACKGROUND TEXT EFFECT -->
+    <div class="cine-bg-text-wrap">
+      <div class="cine-bg-word">CLEAN</div>
+      <div class="cine-bg-word">QUEST</div>
     </div>
-    <div id="auth-err" class="auth-err"></div>
-    <div class="auth-form" id="auth-form">
-      <div class="field-g" id="fg-user" style="display:none">
-        <label class="field-lbl">Username</label>
-        <div class="field-wrap"><input class="field-in" id="f-user" type="text" placeholder="your_username" autocomplete="username" onblur="vFieldBlur(this,'user')" oninput="vFieldClear(this,'user')"/></div>
-        <span class="field-err" id="e-user"></span>
-      </div>
-      <div class="field-g">
-        <label class="field-lbl">Email</label>
-        <div class="field-wrap"><input class="field-in" id="f-email" type="email" placeholder="you@email.com" autocomplete="email" onblur="vFieldBlur(this,'email')" oninput="vFieldClear(this,'email')"/></div>
-        <span class="field-err" id="e-email"></span>
-      </div>
-      <div class="field-g">
-        <label class="field-lbl">Password</label>
-        <div class="field-wrap">
-          <input class="field-in" id="f-pass" type="password" placeholder="••••••••" autocomplete="current-password" onblur="vFieldBlur(this,'pass')" oninput="vFieldClear(this,'pass')"/>
-          <button class="field-eye" type="button" onclick="toggleEye()" id="eye-btn">${IC.ok}</button>
+
+    <!-- MAIN CONTENT -->
+    <div class="cine-content">
+      <!-- 5. TYPOGRAPHY -->
+      <div class="cine-mission-lbl">01 — GLOBAL MISSION</div>
+      <div class="cine-title">RESTORE<br/>THE WORLD</div>
+      <div class="cine-sub">Cities are drowning in waste.<br/>Take action. Clean real locations.</div>
+
+      <!-- FORM AREA -->
+      <div class="cine-form" id="auth-form">
+        <div id="auth-err" class="auth-err cinematic"></div>
+        
+        <div class="cine-input-wrap" id="fg-user" style="display:none">
+          <input class="cine-input" id="f-user" type="text" placeholder="Designation (Username)" autocomplete="username" onblur="vFieldBlur(this,'user')" oninput="vFieldClear(this,'user')"/>
+          <span class="field-err" id="e-user"></span>
         </div>
-        <span class="field-err" id="e-pass"></span>
+
+        <div class="cine-input-wrap">
+          <input class="cine-input" id="f-email" type="email" placeholder="Comms Channel (Email)" autocomplete="email" onblur="vFieldBlur(this,'email')" oninput="vFieldClear(this,'email')"/>
+          <span class="field-err" id="e-email"></span>
+        </div>
+
+        <div class="cine-input-wrap">
+          <input class="cine-input" id="f-pass" type="password" placeholder="Access Code (Password)" autocomplete="current-password" onblur="vFieldBlur(this,'pass')" oninput="vFieldClear(this,'pass')"/>
+          <span class="field-err" id="e-pass"></span>
+        </div>
+        
+        <!-- 8. CTA BUTTON -->
+        <button class="cine-btn" id="auth-btn" onclick="submitAuth()" disabled>ENTER THE WORLD</button>
+        
+        <!-- Tab switch (hidden to pure UI, but kept functional if needed) -->
+        <div class="cine-switch" id="tab-signup" onclick="switchTab('signup')" style="display:block">New Operative? Initialize Profile</div>
+        <div class="cine-switch" id="tab-login" onclick="switchTab('login')" style="display:none">Existing Operative? Connect</div>
       </div>
-      <button class="btn btn-g" id="auth-btn" onclick="submitAuth()" disabled>Login</button>
     </div>
   </div>`;
 }
@@ -226,12 +322,15 @@ function authHTML() {
 let _mode = 'login';
 function switchTab(m) {
   _mode = m;
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('on'));
-  document.getElementById('tab-' + m).classList.add('on');
   document.getElementById('fg-user').style.display = m === 'signup' ? '' : 'none';
-  document.getElementById('auth-btn').textContent = m === 'signup' ? 'Create Account' : 'Login';
+  document.getElementById('auth-btn').textContent = 'ENTER THE WORLD';
   document.getElementById('auth-err').classList.remove('show');
-  ['user', 'email', 'pass'].forEach(k => { const e = document.getElementById('e-' + k); if (e) e.textContent = ''; const f = document.getElementById('f-' + k); if (f) { f.classList.remove('err', 'ok'); } });
+  document.getElementById('tab-signup').style.display = m === 'signup' ? 'none' : 'block';
+  document.getElementById('tab-login').style.display = m === 'signup' ? 'block' : 'none';
+  ['user', 'email', 'pass'].forEach(k => { 
+    const e = document.getElementById('e-' + k); if (e) e.textContent = ''; 
+    const f = document.getElementById('f-' + k); if (f) { f.classList.remove('err', 'ok'); } 
+  });
   checkAuthBtn();
 }
 function vFieldBlur(el, key) {
