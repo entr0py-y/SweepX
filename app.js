@@ -349,7 +349,7 @@ async function doEnter() {
 function renderHome() {
   const u = S.user || {}, s = document.getElementById('s-home');
   s.innerHTML = `
-<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px;background:${acCol()};border:2px solid var(--accent)">${ini(u.username)}</div><div class="hdr-g"><span>Hello!</span><span>${u.username || ''}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.help}</div><div class="icon-btn" style="position:relative">${I.bell}<span class="notif-dot"></span></div></div></div>
+<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px">${ini(u.username)}</div><div class="hdr-g"><span>Hello!</span><span>${u.username || ''}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.help}</div><div class="icon-btn" style="position:relative">${I.bell}<span class="notif-dot"></span></div></div></div>
 <div class="loc-bar" id="home-loc-bar"><span class="loc-bar-icon">${I.pin}</span><span class="loc-bar-text" id="home-loc-text">Locating…</span></div>
 <div class="sg">
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.pin}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Reports</div><div class="sc-val" id="sc-reports">–</div></div></div>
@@ -1266,8 +1266,8 @@ let _profMs = [];
 function renderProfile() {
   const u = S.user || {}, s = document.getElementById('s-profile');
   s.innerHTML = `
-<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px;background:${acCol()};border:2px solid var(--accent);box-shadow:0 0 12px var(--accent-glow)">${ini(u.username)}</div><div class="hdr-g"><span>${u.username || ''}</span><span>@${(u.username || '').toLowerCase()}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.cog}</div><div class="icon-btn" onclick="doLogout()">${I.logout}</div></div></div>
-<div class="prof-hd"><div class="avatar" style="width:72px;height:72px;font-size:24px;background:${acCol()};border:2px solid var(--accent);box-shadow:0 0 20px var(--accent-glow)">${ini(u.username)}</div><div class="prof-nm">${u.username || ''}</div><div class="prof-h">@${(u.username || '').toLowerCase()}</div></div>
+<div class="hdr"><div class="hdr-l"><div class="avatar" style="width:40px;height:40px;font-size:14px">${ini(u.username)}</div><div class="hdr-g"><span>${u.username || ''}</span><span>@${(u.username || '').toLowerCase()}</span></div></div><div class="hdr-r"><div class="icon-btn">${I.cog}</div><div class="icon-btn" onclick="doLogout()">${I.logout}</div></div></div>
+<div class="prof-hd"><div class="avatar" style="width:72px;height:72px;font-size:24px;margin-bottom:12px">${ini(u.username)}</div><div class="prof-nm">${u.username || ''}</div><div class="prof-h">@${(u.username || '').toLowerCase()}</div></div>
 <div class="sg">
 <div class="sc ft"><div class="sc-top"><div class="sc-ico">${I.star}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Points</div><div class="sc-val" id="pf-pts">–</div></div></div>
 <div class="sc"><div class="sc-top"><div class="sc-ico">${I.chk}</div><div class="sc-arr">${I.arr}</div></div><div class="sc-bot"><div class="sc-lbl">Missions</div><div class="sc-val" id="pf-mc">–</div></div></div>

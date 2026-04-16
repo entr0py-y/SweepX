@@ -32,11 +32,11 @@
         <svg style="position: absolute; width: 0; height: 0;">
           <defs>
             <filter id="etheral-filter">
-              <feTurbulence result="undulation" numOctaves="2" baseFrequency="0.001,0.004" seed="0" type="turbulence" />
+              <feTurbulence result="undulation" numOctaves="1" baseFrequency="0.001" seed="0" type="turbulence" />
               <feColorMatrix id="etheral-hue" in="undulation" type="hueRotate" values="0" />
-              <feColorMatrix in="dist" result="circulation" type="matrix" values="4 0 0 0 1  4 0 0 0 1  4 0 0 0 1  1 0 0 0 0" />
-              <feDisplacementMap in="SourceGraphic" in2="circulation" scale="100" result="dist" />
-              <feDisplacementMap in="dist" in2="undulation" scale="100" result="output" />
+              <feColorMatrix in="dist" result="circulation" type="matrix" values="1 0 0 0 0.2  1 0 0 0 0.2  1 0 0 0 0.2  1 0 0 0 0" />
+              <feDisplacementMap in="SourceGraphic" in2="circulation" scale="40" result="dist" />
+              <feDisplacementMap in="dist" in2="undulation" scale="40" result="output" />
             </filter>
           </defs>
         </svg>
@@ -44,7 +44,7 @@
         <!-- Blurred animated shadow overlay -->
         <div style="position: absolute; inset: -100px; filter: url(#etheral-filter) blur(4px);">
           <div style="
-            background-color: rgba(128, 128, 128, 1);
+            background-color: rgba(20, 20, 20, 1);
             -webkit-mask-image: url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');
             mask-image: url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');
             -webkit-mask-size: cover;
@@ -63,7 +63,7 @@
             background-image: url('https://framerusercontent.com/images/g0QcWrxr87K0ufOxIUFBakwYA8.png');
             background-size: 240px;
             background-repeat: repeat;
-            opacity: 0.5;
+            opacity: 0.15;
         "></div>
       </div>
       <div class="app-inner" id="screen-area">

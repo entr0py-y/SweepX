@@ -301,24 +301,25 @@ body {
 .avatar {
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 600; color: var(--text-primary);
+  font-weight: 700; color: #000;
+  background: var(--accent);
   flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(124, 255, 59, 0.2);
 }
 
 .icon-btn {
   width: 40px; height: 40px;
-  border-radius: 50%;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0;
   color: var(--text-primary);
-  transition: background .15s ease, transform .15s ease;
+  transition: all .2s ease;
 }
-.icon-btn:active { background: var(--surface-2); transform: scale(0.93) }
-.icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.icon-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
+.icon-btn:active { background: rgba(255, 255, 255, 0.12); transform: scale(0.95); }
+.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
 
 /* Badges */
 .badge {
@@ -434,14 +435,15 @@ body {
 .hdr-l { display: flex; align-items: center; gap: 12px; min-width: 0 }
 .hdr-g { display: flex; flex-direction: column; min-width: 0 }
 .hdr-g span:first-child {
-  font-size: 12px; color: var(--text-secondary);
-  font-weight: 400; line-height: 1;
+  font-size: 11px; color: var(--text-muted);
+  font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; line-height: 1.4;
 }
 .hdr-g span:last-child {
-  font-size: 16px; color: var(--text-primary);
-  font-weight: 600; line-height: 1.3;
-  letter-spacing: -0.02em;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px;
+  font-size: 18px; color: var(--text-primary);
+  font-weight: 700; line-height: 1.2;
+  letter-spacing: -0.03em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;
 }
 .hdr-r { display: flex; gap: 8px; flex-shrink: 0 }
 
@@ -495,9 +497,10 @@ body {
 .sc-top { display: flex; justify-content: space-between; align-items: flex-start }
 
 .sc-ico {
-  width: 40px; height: 40px;
-  border-radius: 14px;
-  background: var(--surface-2);
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -506,14 +509,14 @@ body {
 .sc.ft .sc-ico svg { stroke: var(--accent) }
 
 .sc-arr {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--surface-2);
-  border: 1px solid var(--card-border);
+  width: 24px; height: 24px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.sc.ft .sc-arr { background: var(--accent-dim) }
-.sc-arr svg { width: 11px; height: 11px; stroke: var(--text-secondary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.sc.ft .sc-arr { background: rgba(124, 255, 59, 0.12); border-color: rgba(124, 255, 59, 0.2); }
+.sc-arr svg { width: 10px; height: 10px; stroke: var(--text-muted); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
 .sc.ft .sc-arr svg { stroke: var(--accent) }
 
 .sc-bot { margin-top: auto }
@@ -533,7 +536,6 @@ body {
 }
 .sc.ft .sc-val {
   color: var(--accent);
-  text-shadow: 0 0 30px var(--accent-glow);
 }
 
 /* Status Strip */
