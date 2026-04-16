@@ -338,7 +338,27 @@ body {
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
 
 /* Primary button */
-.btn-p:disabled { opacity: .35; cursor: not-allowed }
+.btn-p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #7CFF3B;
+  color: #000;
+  border-radius: 40px;
+  padding: 16px 24px;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+  box-shadow: 0 0 24px rgba(124, 255, 59, 0.25);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease, opacity 0.2s;
+}
+.btn-p:active:not(:disabled) { transform: scale(0.96); box-shadow: 0 0 12px rgba(124, 255, 59, 0.5); }
+.btn-p:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; pointer-events: none; }
 
 /* Minimal Accept Pill */
 .btn-accept-pill {
